@@ -2,7 +2,7 @@ from typing import Optional, List, Dict, Annotated
 from uuid import UUID
 
 import pymongo
-from beanie import Document, PydanticObjectId, Indexed
+from bunnet import Document, PydanticObjectId, Indexed
 from pydantic import Field, BaseModel
 from pymongo import IndexModel
 

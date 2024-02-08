@@ -1,11 +1,10 @@
 import json
 import httpx
+from datetime import datetime
 from pymongo.errors import DuplicateKeyError
 
 from src.models import Transaction
-from src.config import init_db
-
-init_db([Transaction])
+from src.config import init_db, logger
 
 
 def get_transactions(account_hash: str):
@@ -35,12 +34,14 @@ def get_transactions(account_hash: str):
     }
     
     while loop:
+        json_data = {"0": {"account": account_hash, "filter": "SWAP", "isMainnet": True, "user": account_hash}}
+        if cursor:
+            json_data["0"]["cursor"] = cursor
+            
         params = {
             'batch': '1',
-            'input': json.dumps({"0": {"account": account_hash, "filter": "SWAP", "isMainnet": True, "user": account_hash}}),
+            'input': json.dumps(json_data),
         }
-        if cursor:
-            params["cursor"] = cursor
         
         response = httpx.get('https://xray.helius.xyz/trpc/transactions', params = params, cookies = cookies, headers = headers)
         if response.status_code in [200]:
@@ -54,15 +55,20 @@ def get_transactions(account_hash: str):
                 else:
                     loop = False
                 
-                transactions = _data.get("result",[])
+                transactions = _data.get("result", [])
+                logger.info(f"Saving {len(transactions)} transactions for {account_hash}")
                 for transaction in transactions:
                     _timestamp = transaction["timestamp"]
                     # Convert and compare timestamps
+                    transaction["account"] = account_hash
                     
                     transac = Transaction.model_validate(transaction)
+                    
                     try:
                         transac.create()
                     except DuplicateKeyError:
                         pass
-    
+
+
+init_db([Transaction])
 get_transactions("2bhkQ6uVn32ddiG4Fe3DVbLsrExdb3ubaY6i1G4szEmq")
