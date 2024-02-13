@@ -17,7 +17,7 @@ class Transaction(Document):
         use_state_management = True
         
         indexes = [
-            IndexModel("signature", name="signature_unique_1", unique=True)
+            IndexModel("txHash", name="signature_unique_1", unique=True)
         ]
     
     model_config = simple_pydantic_model_config
@@ -28,6 +28,6 @@ class Transaction(Document):
         alias = "_id",
     )
     
-    signature: str = Field(description = "Transaction signature")
+    tx_hash: str = Field(description = "Transaction signature", alias="txHash")
     account: str = Field(description = "Account ID")
     

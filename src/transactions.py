@@ -1,74 +1,103 @@
 import json
-import httpx
-from datetime import datetime
-from pymongo.errors import DuplicateKeyError
+import time
 
+import httpx
+from datetime import datetime, timedelta
+from pymongo.errors import DuplicateKeyError
 from src.models import Transaction
 from src.config import init_db, logger
+import platform
 
 
-def get_transactions(account_hash: str):
+def compute_timestamp(timestamp: int):
+    try:
+        _timestamp = timestamp
+        _date = datetime.fromtimestamp(_timestamp)
+    except OSError:
+        _timestamp = timestamp / 1000
+        _date = datetime.fromtimestamp(_timestamp)
+    return _date, _timestamp
+
+
+def get_transaction_coins_for_x_days(account_hash: str, last_x_days: int = 7):
+    timeout = 60 * 10
+    current_date = datetime.today()
+    last_x_days_date = current_date - timedelta(days=last_x_days + 1)
+
     loop = True
-    cursor = None
-    cookies = {
-        '_ga': 'GA1.1.945626448.1707306938',
-        '_ga_F96PEY6C7C': 'GS1.1.1707394598.3.1.1707394779.0.0.0',
-        'ph_phc_H66gRNy1uok5uPmsul2kpbRynt6h9L74f5BlPJ4RMqE_posthog': '%7B%22distinct_id%22%3A%22018d8388-7612-7e5c-8954-d8dc0cfd9e42%22%2C%22%24sesid%22%3A%5B1707394783623%2C%22018d88a4-01f1-7410-bea1-56532ce2aa2c%22%2C1707394466289%5D%7D',
-        '_ga_XGVFBFP3B4': 'GS1.1.1707392706.4.1.1707395031.0.0.0',
-    }
-    
+    offset = 0
+    limit = 30
+
+    tokens_traded = set()
+
     headers = {
-        'authority': 'xray.helius.xyz',
-        'accept': '*/*',
+        'authority': 'multichain-api.birdeye.so',
+        'accept': 'application/json, text/plain, */*',
         'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8',
-        'content-type': 'application/json',
-        # 'cookie': '_ga=GA1.1.945626448.1707306938; _ga_F96PEY6C7C=GS1.1.1707394598.3.1.1707394779.0.0.0; ph_phc_H66gRNy1uok5uPmsul2kpbRynt6h9L74f5BlPJ4RMqE_posthog=%7B%22distinct_id%22%3A%22018d8388-7612-7e5c-8954-d8dc0cfd9e42%22%2C%22%24sesid%22%3A%5B1707394783623%2C%22018d88a4-01f1-7410-bea1-56532ce2aa2c%22%2C1707394466289%5D%7D; _ga_XGVFBFP3B4=GS1.1.1707392706.4.1.1707395031.0.0.0',
-        'referer': 'https://xray.helius.xyz/account/2bhkQ6uVn32ddiG4Fe3DVbLsrExdb3ubaY6i1G4szEmq?network=mainnet',
+        'agent-id': '18b2d1c0-e2fc-46ca-8a25-9ea14378e9e0',
+        'cf-be': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3MDc3NjE3MDMsImV4cCI6MTcwNzc2MjAwM30.xBDaGBD4403Ozcfya3bhCBFOMu6wipbiFSZE8-FXu7c',
+        'origin': 'https://birdeye.so',
+        'referer': 'https://birdeye.so/',
         'sec-ch-ua': '"Not A(Brand";v="99", "Google Chrome";v="121", "Chromium";v="121"',
         'sec-ch-ua-mobile': '?0',
         'sec-ch-ua-platform': '"Windows"',
         'sec-fetch-dest': 'empty',
         'sec-fetch-mode': 'cors',
-        'sec-fetch-site': 'same-origin',
-        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+        'sec-fetch-site': 'same-site',
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
     }
-    
+
     while loop:
-        json_data = {"0": {"account": account_hash, "filter": "SWAP", "isMainnet": True, "user": account_hash}}
-        if cursor:
-            json_data["0"]["cursor"] = cursor
-            
         params = {
-            'batch': '1',
-            'input': json.dumps(json_data),
+            'address': account_hash,
+            "offset": offset,
+            "limit": limit
         }
-        
-        response = httpx.get('https://xray.helius.xyz/trpc/transactions', params = params, cookies = cookies, headers = headers)
+
+        url = "https://multichain-api.birdeye.so/solana/trader_profile/trader_txs"
+        response = httpx.get(url, params=params, headers=headers, timeout=timeout)
         if response.status_code in [200]:
             json_data = response.json()
             if json_data:
-                result = json_data[0]["result"]
-                _data = result["data"]
-                next_cursor = _data.get("oldest")
-                if next_cursor:
-                    cursor = next_cursor
+                if json_data.get("statusCode") == 200 and json_data.get("success"):
+                    _data = json_data.get("data", {})
+                    if _data:
+                        has_next = _data.get("hasNext", False)
+                        transactions = _data.get("items", [])
+                        logger.info(f"Saving {len(transactions)} transactions for {account_hash} [{offset}]")
+                        for transaction in transactions:
+                            block_time = transaction["blockTime"]
+                            _transaction_datetime, _timestamp = compute_timestamp(block_time)
+
+                            # Only process transactions within last_x_days :
+                            if _transaction_datetime - timedelta(days=2) >= last_x_days_date:
+                                transaction["timestamp"] = _timestamp
+                                transaction["account"] = account_hash
+                                transaction.pop("blockTime", None)
+                                sorted_int = transaction.pop("sortedIns", [])
+                                for token in transaction.pop("tokenChange", []):
+                                    tokens_traded.add(f"{token['address']}_____{token['symbol']}")
+                            else:
+                                loop = False
+                                logger.info(f"All transactions for last {last_x_days} days complete")
+                                break
+                        if has_next:
+                            offset += limit
+                        else:
+                            logger.info("No next results ...")
+                            loop = False
                 else:
-                    loop = False
-                
-                transactions = _data.get("result", [])
-                logger.info(f"Saving {len(transactions)} transactions for {account_hash}")
-                for transaction in transactions:
-                    _timestamp = transaction["timestamp"]
-                    # Convert and compare timestamps
-                    transaction["account"] = account_hash
-                    
-                    transac = Transaction.model_validate(transaction)
-                    
-                    try:
-                        transac.create()
-                    except DuplicateKeyError:
-                        pass
+                    logger.info(f"Request unsuccessful => {json_data}")
+                    loop = True
+        elif response.status_code == 429:
+            logger.info("Too many requests .. sleeping for some time ...")
+            time.sleep(60)
+
+    # Get transaction data of each token filtering by account hash on radium pool:
+    tokens_traded = list(tokens_traded)
+    logger.info(f"Total tokens traded within last {last_x_days} days for account [{account_hash} => {len(tokens_traded)}")
+    print(tokens_traded)
 
 
 init_db([Transaction])
-get_transactions("2bhkQ6uVn32ddiG4Fe3DVbLsrExdb3ubaY6i1G4szEmq")
+get_transaction_coins_for_x_days("2bhkQ6uVn32ddiG4Fe3DVbLsrExdb3ubaY6i1G4szEmq")
