@@ -8,6 +8,8 @@ from pymongo.errors import DuplicateKeyError
 from src.models import Transaction
 from src.config import init_db, logger
 import platform
+from seleniumbase import Driver
+from playwright.sync_api import sync_playwright
 
 
 class TransactionManager:
@@ -24,7 +26,6 @@ class TransactionManager:
             _timestamp = timestamp / 1000
             _date = datetime.fromtimestamp(_timestamp)
         return _date, _timestamp
-
 
     def get_transaction_coins_for_x_days(self):
         timeout = 60 * 10
@@ -100,7 +101,8 @@ class TransactionManager:
                 logger.info("Too many requests .. sleeping for some time ...")
                 time.sleep(60)
 
-        logger.info(f"Total tokens traded within last {self.last_x_days} days for account [{self.account_hash} => {len(list(tokens_traded))}")
+        logger.info(
+            f"Total tokens traded within last {self.last_x_days} days for account [{self.account_hash} => {len(list(tokens_traded))}")
 
         # Save tokens traded
 
@@ -129,11 +131,19 @@ class TransactionManager:
         logger.info(f"Loaded {len(_tokens_traded)} tokens ...")
         # Get transaction data of each token filtering by account hash on radium pool:
 
-        for token in _tokens_traded:
-            address, symbol = token.strip().split("_____")
-            driver = self.create_driver()
-            # driver.get("https://dexscreener.com/")
-            print(_tokens_traded)
+        with sync_playwright() as playwright_sync:
+            browser = playwright_sync.chromium.launch(proxy={
+                "server": "datacenter.proxyempire.io:9000",
+                "username": "a0f76e18a0;any",
+                "password": "ddfb4e1b18"
+            }, headless=False)
+            context = browser.new_context()
+            page = context.new_page()
+
+            for token in _tokens_traded:
+                address, symbol = token.strip().split("_____")
+                page.goto("https://dexscreener.com/")
+                print(_tokens_traded)
 
 
 if __name__ == "__main__":
