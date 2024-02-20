@@ -1,6 +1,5 @@
 import SideNav from "../components/SideNav";
 
-// eslint-disable-next-line no-unused-vars
 import * as React from "react";
 import Box from "@mui/material/Box";
 import Toolbar from "@mui/material/Toolbar";
@@ -39,13 +38,13 @@ const Home = () => {
             width: "100%",
           }}
         >
-          {users.map((user) => (
+          {users.map((user, index) => (
             // <tr key={user.id}>
             // <td>{user.id}</td>
             // <td>{user.name}</td>
             // <td>${user.balance}</td>
             // </tr>
-            <ClickableWalletCard balance={user.balance} />
+            <ClickableWalletCard key={index} balance={user.balance} />
           ))}
         </Box>
       </Box>
