@@ -5,7 +5,7 @@
   width: 100%;
   height: 100vh;
   overflow: hidden;
-  max-width:auto;
+  max-width: auto;
 }
 
 .logo {
@@ -44,24 +44,20 @@
   color: #888;
 }
 
-
 .App {
   text-align: center;
-  height:100vh;
-  overflow:hidden;
-  width:100%;
+  height: 100vh;
+  overflow: hidden;
+  width: 100%;
 }
 
-::-webkit-scrollbar{
+::-webkit-scrollbar {
   background-color: transparent;
   width: 9px;
   height: 5px;
   border-radius: 10px;
 }
 
-
-::-webkit-scrollbar-thumb{
-  background-color:#ccced1;
+::-webkit-scrollbar-thumb {
+  background-color: #ccced1;
 }
-
-

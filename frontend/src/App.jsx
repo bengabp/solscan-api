@@ -1,25 +1,18 @@
-import { useState } from 'react'
-import './App.css'
-import './styles/Main.css'
-import {
-  createTheme,
-  ThemeProvider,
-  Stack,
-  Box
-} from '@mui/material';
-import HomeAppBar from './components/HomeAppBar';
-import SideNav from './components/SideNav';
-import Home from './pages/Home';
-import {BrowserRouter, Routes, Route} from 'react-router-dom'
-import CssBaseline from '@mui/material/CssBaseline';
-
+import { useState } from "react";
+import "./App.css";
+import "./styles/Main.css";
+import { createTheme, ThemeProvider, Stack, Box } from "@mui/material";
+import HomeAppBar from "./components/HomeAppBar";
+import SideNav from "./components/SideNav";
+import Home from "./pages/Home";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import CssBaseline from "@mui/material/CssBaseline";
 
 const theme = createTheme({
-  typography:{
-    fontSize:12
-  }
-})
-
+  typography: {
+    fontSize: 12,
+  },
+});
 
 const App = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -30,10 +23,10 @@ const App = () => {
   return (
     <BrowserRouter>
       <CssBaseline />
-      <Stack 
+      <Stack
         direction="column"
         sx={{
-          width:"100%"
+          width: "100%",
         }}
       >
         <HomeAppBar></HomeAppBar>
@@ -43,6 +36,6 @@ const App = () => {
       </Stack>
     </BrowserRouter>
   );
-}
+};
 
 export default App;

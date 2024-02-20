@@ -11,7 +11,7 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  
+
   height: 100vh;
   overflow: hidden;
 }
@@ -69,4 +69,3 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
-
