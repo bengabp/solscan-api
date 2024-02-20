@@ -1,5 +1,6 @@
 import SideNav from "../components/SideNav";
 
+// eslint-disable-next-line no-unused-vars
 import * as React from "react";
 import Box from "@mui/material/Box";
 import Toolbar from "@mui/material/Toolbar";
