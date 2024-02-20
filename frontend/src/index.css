@@ -11,6 +11,9 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  
+  height: 100vh;
+  overflow: hidden;
 }
 
 a {
@@ -51,7 +54,7 @@ button:hover {
 }
 button:focus,
 button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  outline: none;
 }
 
 @media (prefers-color-scheme: light) {
@@ -66,3 +69,4 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
