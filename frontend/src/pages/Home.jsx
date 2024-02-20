@@ -19,7 +19,7 @@ const Home = () => {
 
   return (
     <Box sx={{ display: "flex" }}>
-      <SideNav></SideNav>
+      <SideNav />
       <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
         <Toolbar />
         <Stack direction="row" spacing={3} height={"40px"}>
@@ -28,25 +28,14 @@ const Home = () => {
             Add wallet
           </Button>
         </Stack>
-        <Box
-          sx={{
-            height: "100vh",
-            overflowY: "auto",
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, min-max(200px, 1fr))",
-            gap: "20px",
-            width: "100%",
-          }}
-        >
-          {users.map((user, index) => (
-            // <tr key={user.id}>
-            // <td>{user.id}</td>
-            // <td>{user.name}</td>
-            // <td>${user.balance}</td>
-            // </tr>
-            <ClickableWalletCard key={index} balance={user.balance} />
-          ))}
-        </Box>
+        {users.map((user, index) => (
+          // <tr key={user.id}>
+          // <td>{user.id}</td>
+          // <td>{user.name}</td>
+          // <td>${user.balance}</td>
+          // </tr>
+          <ClickableWalletCard key={index} balance={user.balance} />
+        ))}
       </Box>
     </Box>
   );
