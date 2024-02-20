@@ -1,15 +1,14 @@
 import SideNav from "../components/SideNav";
+import "../esin.css";
 
-import * as React from "react";
 import Box from "@mui/material/Box";
-import Toolbar from "@mui/material/Toolbar";
 import Stack from "@mui/material/Stack";
 import { Button } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import CustomSearchBar from "../components/SearchBar";
 import ClickableWalletCard from "../components/walletCard";
 
-const Home = () => {
+function Home() {
   // Generate wallet data for 100 users
   const users = Array.from({ length: 100 }, (_, index) => ({
     id: index + 1,
@@ -18,27 +17,39 @@ const Home = () => {
   }));
 
   return (
-    <Box sx={{ display: "flex" }}>
+    <Box
+      sx={{
+        display: "flex",
+        overflow: "scroll",
+        backgroundColor: "whitesmoke",
+      }}
+    >
       <SideNav />
-      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
-        <Toolbar />
+      <div
+        className="container padding-x-1"
+        style={{
+          marginTop: "75px",
+        }}
+      >
         <Stack direction="row" spacing={3} height={"40px"}>
-          <CustomSearchBar placeholder="Search wallets"></CustomSearchBar>
-          <Button variant="contained" endIcon={<AddIcon></AddIcon>}>
+          <CustomSearchBar placeholder="Search wallets" />
+          <Button variant="contained" endIcon={<AddIcon />}>
             Add wallet
           </Button>
         </Stack>
-        {users.map((user, index) => (
-          // <tr key={user.id}>
-          // <td>{user.id}</td>
-          // <td>{user.name}</td>
-          // <td>${user.balance}</td>
-          // </tr>
-          <ClickableWalletCard key={index} balance={user.balance} />
-        ))}
-      </Box>
+        <div className="grid padding-y-1">
+          {users.map((user, index) => (
+            // <tr key={user.id}>
+            // <td>{user.id}</td>
+            // <td>{user.name}</td>
+            // <td>${user.balance}</td>
+            // </tr>
+            <ClickableWalletCard key={index} balance={user.balance} />
+          ))}
+        </div>
+      </div>
     </Box>
   );
-};
+}
 
 export default Home;

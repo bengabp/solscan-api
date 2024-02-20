@@ -29,7 +29,7 @@ const App = () => {
           width: "100%",
         }}
       >
-        <HomeAppBar></HomeAppBar>
+        <HomeAppBar />
         <Routes>
           <Route index element={<Home />} />
         </Routes>
