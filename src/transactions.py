@@ -1,15 +1,13 @@
 import json
 import time
 from selenium.webdriver.common.by import By
-from undetected_chromedriver import Chrome, ChromeOptions, WebElement
+import seleniumwire.undetected_chromedriver as uc
+from undetected_chromedriver import Chrome, ChromeOptions
 import httpx
 from datetime import datetime, timedelta
 from pymongo.errors import DuplicateKeyError
 from src.models import Transaction
 from src.config import init_db, logger
-import platform
-from seleniumbase import Driver
-from playwright.sync_api import sync_playwright
 
 
 class TransactionManager:
@@ -108,18 +106,24 @@ class TransactionManager:
 
     @staticmethod
     def create_driver():
-        chrome_options = ChromeOptions()
-        chrome_options.add_argument("--auto-open-devtools-for-tabs")
-        driver = Chrome(use_subprocess=False, options=chrome_options)
+        username = "zxa524UKEN7dJN64"
+        password = "mobile;;;;"
+        host = "rotating.proxyempire.io:9000"
 
-        driver.execute_script('''window.open("http://nowsecure.nl","_blank");''')  # open page in new tab
-        time.sleep(5)  # wait until page has loaded
-        driver.switch_to.window(window_name=driver.window_handles[0])  # switch to first tab
-        driver.close()  # close first tab
-        driver.switch_to.window(window_name=driver.window_handles[0])  # switch back to new tab
-        time.sleep(2)
-        driver.get("https://google.com")
-        time.sleep(2)
+        options = uc.ChromeOptions()
+        proxy_options = {
+            'proxy': {
+                'http': f'http://{username}:{password}@{host}',
+                'https': f'http://{username}:{password}@{host}',
+                'no_proxy': 'localhost,127.0.0.1'
+            }
+        }
+        driver = uc.Chrome(
+            options=options,
+            seleniumwire_options=proxy_options,
+            version_main=121
+        )
+
         driver.get("https://dexscreener.com/")  # this should pass cloudflare captchas now
 
         return driver
@@ -131,19 +135,13 @@ class TransactionManager:
         logger.info(f"Loaded {len(_tokens_traded)} tokens ...")
         # Get transaction data of each token filtering by account hash on radium pool:
 
-        with sync_playwright() as playwright_sync:
-            browser = playwright_sync.chromium.launch(proxy={
-                "server": "datacenter.proxyempire.io:9000",
-                "username": "a0f76e18a0;any",
-                "password": "ddfb4e1b18"
-            }, headless=False)
-            context = browser.new_context()
-            page = context.new_page()
+        driver = self.create_driver()
+        print(driver)
 
-            for token in _tokens_traded:
-                address, symbol = token.strip().split("_____")
-                page.goto("https://dexscreener.com/")
-                print(_tokens_traded)
+        # for token in _tokens_traded:
+        #     address, symbol = token.strip().split("_____")
+        #     page.goto("https://dexscreener.com/")
+        #     print(_tokens_traded)
 
 
 if __name__ == "__main__":

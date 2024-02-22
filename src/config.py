@@ -8,7 +8,7 @@ from pymongo import MongoClient
 from pydantic import ConfigDict
 from typing import List
 
-BASE_DIR = "/".join(os.path.dirname(os.path.realpath(__file__)).split("/")[:-1])
+BASE_DIR = "C:/Users/bengabp/Documents/IT/UKTeam/SolanaScan"
 
 
 def create_dir(name):
