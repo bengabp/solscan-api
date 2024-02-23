@@ -4,7 +4,7 @@ import os
 import time
 
 from selectolax.parser import HTMLParser
-
+from pprint import pprint
 from src.config import logger, BASE_DIR
 from typing import List
 import subprocess
@@ -108,25 +108,25 @@ class WindowManager:
                              duration=random.randint(1, 3))
 
     def run(self):
-        bypass_cloudflare = True
-        waiting_for_verification = False
+        waiting_for_verification = True
 
-        while bypass_cloudflare:
-            if not waiting_for_verification:
-                locations, w, h = self.locate_image("assets/cloudflare_verify_image.png")
-                if locations:
-                    x, y = locations[0]
-                    pyautogui.click(x + 20, y + 8)
-                    waiting_for_verification = True
-            else:
-                locations, w, h = self.locate_image("assets/dex_screener_logo.png")
-                if locations:
-                    bypass_cloudflare = False
-                    break
+        self.logger.info("Waiting for cloudflare bypass ...")
+
+        while waiting_for_verification:
+            cloudflare_captcha_button_location, _, _ = self.locate_image("assets/cloudflare_verify_image.png")
+            dex_screener_logo_location, _, _ = self.locate_image("assets/dex_screener_logo.png")
+
+            if cloudflare_captcha_button_location:
+                x, y = cloudflare_captcha_button_location[0]
+                pyautogui.click(x + 20, y + 8)
+            elif dex_screener_logo_location:
+                waiting_for_verification = False
 
             self.random_mouse_movement()
 
         self.logger.info("Cloudflare successfully bypassed")
+
+        refined_results = []
 
         for token in self.tokens_traded:
             token_address, token_name = token.split("_____")
@@ -189,7 +189,26 @@ class WindowManager:
 
             parser = HTMLParser(html_content)
             os.remove(random_file_name)
-            print(parser)
+            link =None
+
+            self.logger.info("Parsing html results ... extract raydium link ...")
+            for node in parser.css('div[id^="chakra-modal--body"]  div.chakra-stack > div[class^="custom"] a.chakra-link[href^="https://dexscreener.com"]'):
+                for img in node.css("img.chakra-image"):
+                    title = img.attrs.get("title")
+                    if title == "Raydium":
+                        link = node.attrs.get("href")
+
+            refined_results.append({
+                "tokenName": token_name,
+                "tokenAddress": token_address,
+                "dexScreenerRaydiumPoolLink": link
+            })
+
+            time.sleep(random.randint(1,5))
+            pyautogui.press("esc")
+
+        self.logger.info("Successfully got token data from dexscreener")
+        pprint(refined_results)
 
 
 manager = WindowManager("2bhkQ6uVn32ddiG4Fe3DVbLsrExdb3ubaY6i1G4szEmq", [
