@@ -45,6 +45,8 @@ class WindowManager:
         self.command = f"chrome --start-maximized --window-name='{self.window_name}' {self.target_url} --incognito"
         # self.start_browser_thread = threading.Thread(target=self.start_browser_service)
 
+        self.browser_window_open = False
+
         # Start browser manager thread
         threading.Thread(target=self.browser_manager).start()
 
@@ -71,13 +73,24 @@ class WindowManager:
 
             if not is_running:
                 self.logger.info("Starting chrome browser ...")
-                threading.Thread(target=lambda: subprocess.call(self.command, shell=True)).start()
+                threading.Thread(target=self.start_browser).start()
                 self.logger.debug("Browser is running ...")
                 is_running = True
+                self.browser_window_open = True
             else:
                 is_running = False
 
             time.sleep(30)
+
+    def start_browser(self):
+        subprocess.call(self.command, shell=True)
+
+    def wait_for_browser_window(self):
+        self.logger.info("Waiting for browser window")
+        time.sleep(15)
+        while not self.browser_window_open:
+            pass
+        self.logger.info("Browser window open ..")
 
     def locate_image(self, image_path):
         # Take a screenshot of the entire screen
@@ -100,17 +113,22 @@ class WindowManager:
 
         return locations, w, h
 
-    def random_mouse_movement(self):
+    def random_mouse_movement(self, random_clicks = False):
         """ Simulates actual mouse movements """
 
-        for i in range(random.randint(4, 7)):
+        for i in range(random.randint(2, 4)):
             pyautogui.moveTo(random.randint(10, self.SCREEN_WIDTH), random.randint(200, self.SCREEN_HEIGHT - 100),
                              duration=random.randint(1, 3))
+            if random_clicks:
+                pyautogui.click(
+                    random.randint(int(0.4*self.SCREEN_WIDTH), int(0.6*self.SCREEN_WIDTH)),
+                    random.randint(int(0.4*self.SCREEN_HEIGHT), int(0.6*self.SCREEN_HEIGHT))
+                )
 
-    def run(self):
+    def handle_cloudflare_verification(self):
         waiting_for_verification = True
 
-        self.logger.info("Waiting for cloudflare bypass ...")
+        self.logger.info("Waiting for cloudflare verification ...")
 
         while waiting_for_verification:
             cloudflare_captcha_button_location, _, _ = self.locate_image("assets/cloudflare_verify_image.png")
@@ -123,8 +141,10 @@ class WindowManager:
                 waiting_for_verification = False
 
             self.random_mouse_movement()
-
         self.logger.info("Cloudflare successfully bypassed")
+
+    def run(self):
+        self.handle_cloudflare_verification()
 
         refined_results = []
 
@@ -133,10 +153,10 @@ class WindowManager:
 
             pyautogui.press("/")
             self.random_mouse_movement()
+            pyautogui.hotkey("ctrl", 'a')
             pyautogui.typewrite(token_address)
 
             self.logger.info("Waiting for token search results ...")
-            idle_time = 0
             start_time = time.time()
             while True:
                 locations, w, h = self.locate_image("assets/favourite_icon.png")
@@ -146,6 +166,7 @@ class WindowManager:
                 idle_time = int(abs(time.time() - start_time))
                 if idle_time > 30:
                     pyautogui.press("/")
+                    pyautogui.hotkey("ctrl", 'a')
                     pyautogui.typewrite(token_address)
                     idle_time = 0
                 time.sleep(3)
@@ -166,7 +187,7 @@ class WindowManager:
             pyautogui.hotkey("ctrl", "s")
 
             # Wait for file explorer to open
-            self.logger.info("Opening file explorer to save file ...a")
+            self.logger.info("Opening file explorer to save file ...")
             while True:
                 locations, w, h = self.locate_image("assets/save_file_explorer_buttons.png")
                 if locations:
@@ -197,18 +218,93 @@ class WindowManager:
                     title = img.attrs.get("title")
                     if title == "Raydium":
                         link = node.attrs.get("href")
+            if link:
+                refined_results.append({
+                    "tokenName": token_name,
+                    "tokenAddress": token_address,
+                    "dexScreenerRaydiumPoolLink": link
+                })
 
-            refined_results.append({
-                "tokenName": token_name,
-                "tokenAddress": token_address,
-                "dexScreenerRaydiumPoolLink": link
-            })
-
-            time.sleep(random.randint(1,5))
+            time.sleep(random.randint(1, 5))
             pyautogui.press("esc")
 
         self.logger.info("Successfully got token data from dexscreener")
-        pprint(refined_results)
+        self.process_token_links(refined_results)
+
+    def process_token_links(self, tokens: List):
+        self.wait_for_browser_window()
+
+        for token_info in tokens:
+            self.get_transactions(token_info)
+
+    def get_transactions(self, token_info):
+        # Open new tab
+        pyautogui.hotkey("ctrl", "t")
+        time.sleep(random.randint(1, 4))
+
+        raydium_link = token_info.get("dexScreenerRaydiumPoolLink")
+
+        search_url = f"{raydium_link}?maker={self.account_hash}"
+        pyautogui.typewrite(search_url)
+        pyautogui.press("enter")
+
+        self.handle_cloudflare_verification()
+
+        target_data_frame_x = 0
+        target_data_frame_y = 0
+        target_data_frame_height = 0
+        target_data_frame_width = 0
+
+        is_loading = True
+        while is_loading:
+            location, w, h = self.locate_image("assets/dex_screener_transac_panel.png")
+            if location:
+                target_data_frame_x = location[0][0]
+                target_data_frame_width = w
+
+                # Get locations of panel pull up buttons
+                _locations, _, _ = self.locate_image("assets/panel_pull_up.png")
+                if _locations:
+                    for x, y in _locations:
+                        if x > self.SCREEN_WIDTH // 2:
+                            pyautogui.click(x, y)
+                            is_loading = False
+
+                            time.sleep(2)
+                            date_toggle_loc, _, _dth = self.locate_image("assets/toggle_date_format.png")
+                            if date_toggle_loc:
+                                x, y = date_toggle_loc[0]
+                                target_data_frame_y = y+_dth
+
+                                while True:
+                                    _settings_icon_loc, _sw, _sh = self.locate_image("assets/settings_icon.png")
+                                    if _settings_icon_loc:
+                                        target_data_frame_height = (_settings_icon_loc[0][1] - y) + _sh
+                                        break
+
+                                    time.sleep(1)
+
+                                pyautogui.click(x, y)
+
+            self.random_mouse_movement()
+
+        # Loop to extract data from intinite scroll
+        # - we continue scrolling untill the date is  less then our target date
+        """ each time we scroll, we take screenshot and sample the result to an image processing 
+        pipeline that does ocr to extract the results """
+
+        scroll_for_data = True
+        while scroll_for_data:
+            self.random_mouse_movement(random_clicks=True)
+            screenshot = pyautogui.screenshot("data_page.png", region=tuple([int(val) for val in (
+                target_data_frame_x,
+                target_data_frame_y,
+                target_data_frame_width,
+                target_data_frame_height
+            )]))
+
+            scroll_for_data = False
+
 
 
 manager = WindowManager("2bhkQ6uVn32ddiG4Fe3DVbLsrExdb3ubaY6i1G4szEmq", [
@@ -216,4 +312,8 @@ manager = WindowManager("2bhkQ6uVn32ddiG4Fe3DVbLsrExdb3ubaY6i1G4szEmq", [
     "HbxiDXQxBKMNJqDsTavQE7LVwrTR36wjV2EaYEqUw6qH_____GH0ST",
     "8HGyAAB1yoM1ttS7pXjHMa3dukTFGQggnFFH3hJZgzQh_____COPE"
 ])
-manager.run()
+
+
+# manager.run()
+tokens = [{'tokenName': 'PYTH', 'tokenAddress': 'HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3', 'dexScreenerRaydiumPoolLink': 'https://dexscreener.com/solana/baurh17f5ljgt2ogudr3akapkzuoxpyn7hsmjtz98c2e'}, {'tokenName': 'COPE', 'tokenAddress': '8HGyAAB1yoM1ttS7pXjHMa3dukTFGQggnFFH3hJZgzQh', 'dexScreenerRaydiumPoolLink': 'https://dexscreener.com/solana/8hvvahshylpthcxrxwmnawmgrcsjtxygj11eghp2whz8'}]
+manager.process_token_links(tokens)
