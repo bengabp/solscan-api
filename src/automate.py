@@ -3,6 +3,7 @@ import pyautogui
 import os
 import time
 
+from PIL import Image
 from selectolax.parser import HTMLParser
 from pprint import pprint
 from src.config import logger, BASE_DIR
@@ -13,6 +14,10 @@ import psutil
 import numpy as np
 import cv2
 import pyperclip
+
+pyautogui.FAILSAFE = False
+
+from src.utils.ocr import extract_table
 
 """
 Automation steps:
@@ -49,6 +54,8 @@ class WindowManager:
 
         # Start browser manager thread
         threading.Thread(target=self.browser_manager).start()
+
+        self.transactions = []
 
     def browser_manager(self):
         # This loop always checks the browser
@@ -237,7 +244,7 @@ class WindowManager:
         for token_info in tokens:
             self.get_transactions(token_info)
 
-    def get_transactions(self, token_info):
+    def get_transactions(self, token_info, last_x_days: int):
         # Open new tab
         pyautogui.hotkey("ctrl", "t")
         time.sleep(random.randint(1, 4))
@@ -279,7 +286,7 @@ class WindowManager:
                                 while True:
                                     _settings_icon_loc, _sw, _sh = self.locate_image("assets/settings_icon.png")
                                     if _settings_icon_loc:
-                                        target_data_frame_height = (_settings_icon_loc[0][1] - y) + _sh
+                                        target_data_frame_height = (_settings_icon_loc[0][1] - y) + 5
                                         break
 
                                     time.sleep(1)
@@ -294,6 +301,7 @@ class WindowManager:
         pipeline that does ocr to extract the results """
 
         scroll_for_data = True
+        rows = []
         while scroll_for_data:
             self.random_mouse_movement(random_clicks=True)
             screenshot = pyautogui.screenshot("data_page.png", region=tuple([int(val) for val in (
@@ -302,9 +310,16 @@ class WindowManager:
                 target_data_frame_width,
                 target_data_frame_height
             )]))
+            img_rgb = np.array(screenshot.convert("RGB"))[:, :, ::-1].copy()
+            rows = extract_table(img_rgb)
 
-            scroll_for_data = False
+            if rows:
+                last_row = rows[-1]
 
+            else:
+                scroll_for_data = False
+
+        print(rows)
 
 
 manager = WindowManager("2bhkQ6uVn32ddiG4Fe3DVbLsrExdb3ubaY6i1G4szEmq", [
