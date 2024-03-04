@@ -1,19 +1,20 @@
 import json
 import time
-from selenium.webdriver.common.by import By
-import seleniumwire.undetected_chromedriver as uc
-from undetected_chromedriver import Chrome, ChromeOptions
 import httpx
+from curl_cffi import requests
 from datetime import datetime, timedelta
-from pymongo.errors import DuplicateKeyError
 from src.models import Transaction
-from src.config import init_db, logger
+from src.config import init_db
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 class TransactionManager:
-    def __init__(self, account_hash):
+    def __init__(self, account_hash, last_x_days=7):
         self.account_hash = account_hash
-        self.last_x_days = 7
+        self.last_x_days = last_x_days
 
     @staticmethod
     def compute_timestamp(timestamp: int):
@@ -61,7 +62,7 @@ class TransactionManager:
             }
 
             url = "https://multichain-api.birdeye.so/solana/trader_profile/trader_txs"
-            response = httpx.get(url, params=params, headers=headers, timeout=timeout)
+            response = requests.get(url, params=params, headers=headers, timeout=timeout)
             if response.status_code in [200]:
                 json_data = response.json()
                 if json_data:
@@ -98,53 +99,19 @@ class TransactionManager:
             elif response.status_code == 429:
                 logger.info("Too many requests .. sleeping for some time ...")
                 time.sleep(60)
-
+            else:
+                pass
+        
+        tokens_traded = list(tokens_traded)
         logger.info(
-            f"Total tokens traded within last {self.last_x_days} days for account [{self.account_hash} => {len(list(tokens_traded))}")
+            f"Total tokens traded within last {self.last_x_days} days for account [{self.account_hash} => {len(tokens_traded)}")
 
         # Save tokens traded
-
-    @staticmethod
-    def create_driver():
-        username = "zxa524UKEN7dJN64"
-        password = "mobile;;;;"
-        host = "rotating.proxyempire.io:9000"
-
-        options = uc.ChromeOptions()
-        proxy_options = {
-            'proxy': {
-                'http': f'http://{username}:{password}@{host}',
-                'https': f'http://{username}:{password}@{host}',
-                'no_proxy': 'localhost,127.0.0.1'
-            }
-        }
-        driver = uc.Chrome(
-            options=options,
-            seleniumwire_options=proxy_options,
-            version_main=121
-        )
-
-        driver.get("https://dexscreener.com/")  # this should pass cloudflare captchas now
-
-        return driver
-
-    def lookup_tokens(self):
-        with open("tokens_traded.txt") as f:
-            _tokens_traded = f.readlines()
-
-        logger.info(f"Loaded {len(_tokens_traded)} tokens ...")
-        # Get transaction data of each token filtering by account hash on radium pool:
-
-        driver = self.create_driver()
-        print(driver)
-
-        # for token in _tokens_traded:
-        #     address, symbol = token.strip().split("_____")
-        #     page.goto("https://dexscreener.com/")
-        #     print(_tokens_traded)
+        return tokens_traded
+    
 
 
 if __name__ == "__main__":
     account_hash = "2bhkQ6uVn32ddiG4Fe3DVbLsrExdb3ubaY6i1G4szEmq"
     manager = TransactionManager(account_hash)
-    manager.lookup_tokens()
+    manager.get_transaction_coins_for_x_days()

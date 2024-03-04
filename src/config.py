@@ -7,6 +7,8 @@ from bunnet import init_bunnet
 from pymongo import MongoClient
 from pydantic import ConfigDict
 from typing import List
+from datetime import datetime
+
 
 BASE_DIR = "C:/Users/bengabp/Documents/IT/UKTeam/SolanaScan"
 
@@ -59,6 +61,10 @@ console_handler = logging.StreamHandler()
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
+def current_utc_timestamp() -> int:
+    return int(datetime.now().timestamp())
+
+
 
 def to_camel_case(snake_str: str):
     """
@@ -74,7 +80,7 @@ def to_camel_case(snake_str: str):
 
 simple_pydantic_model_config = ConfigDict(
     str_strip_whitespace=True,
-    # alias_generator=to_camel_case,
+    alias_generator=to_camel_case,
     populate_by_name=True,
     extra="allow",
 )
@@ -86,11 +92,14 @@ def init_db(models: List):
     :param models: A list of models to add
     """
     
-    # client = motor.motor_asyncio.AsyncIOMotorClient(MONGODB_URI)
-    # await init_beanie(
-    #     database=client.get_default_database(MONGODB_DB_NAME), document_models=models
-    # )
+    
     
     client = MongoClient(MONGODB_URI)
     init_bunnet(database = client.get_default_database(MONGODB_DB_NAME), document_models = models)
+    
+async def init_async_db(models: List):
+    client = motor.motor_asyncio.AsyncIOMotorClient(MONGODB_URI)
+    await init_beanie(
+        database=client.get_default_database(MONGODB_DB_NAME), document_models=models
+    )
     

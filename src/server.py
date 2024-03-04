@@ -1,0 +1,59 @@
+from fastapi import FastAPI, Request, Response, status, HTTPException
+from pydantic import BaseModel, Field
+from typing import Optional
+from starlette.staticfiles import StaticFiles
+from starlette.templating import Jinja2Templates
+from src.models import Task, Wallet
+from src.config import init_db, simple_pydantic_model_config, current_utc_timestamp
+from beanie import PydanticObjectId
+from pymongo.errors import DuplicateKeyError
+from src.tasks import new_task as add_new_task
+
+
+api = FastAPI()
+
+class TrackWalletRequest(BaseModel):
+    model_config = simple_pydantic_model_config
+    
+    wallet_id: str = Field()
+
+
+@api.on_event("startup")
+def on_start():
+    init_db([Task, Wallet])
+
+
+@api.post("/track")
+def track_new_wallet(request: Request,  response: Response, create_request: TrackWalletRequest):
+    wallet = Wallet.find(Wallet.wallet_id == create_request.wallet_id).first_or_none()
+    new_task = Task(
+        wallet_id = create_request.wallet_id,
+    )
+    
+    # if wallet exists, then update wallet, else create wallet
+    if wallet:
+        new_task.is_update_task = True
+        wallet.status = new_task.status
+        wallet.save_changes()
+    else:
+        new_task.is_update_task = False
+        wallet = Wallet(
+            wallet_id = new_task.wallet_id,
+            status = new_task.status
+        )
+        wallet.create()
+
+    
+    new_task.create()
+    r = add_new_task.send(str(new_task.id))
+    
+    response.status_code = status.HTTP_201_CREATED
+    return wallet
+
+
+@api.get("/wallets")
+def get_all_wallets(request: Request, response: Response):
+    wallets = Wallet.find().to_list()
+    
+    return wallets
+
