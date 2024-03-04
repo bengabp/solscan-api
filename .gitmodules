@@ -1,0 +1,3 @@
+[submodule "dexscreener"]
+    path = dexscreener
+    url = git@github.com:Infignity/dexscreener.git
