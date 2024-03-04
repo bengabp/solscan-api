@@ -7,6 +7,7 @@ from bunnet import PydanticObjectId
 from src.models import Task, Wallet
 from src.config import init_db
 from src.transactions import TransactionManager
+from src.exceptions import NoPopupDataFound
 import logging
 
 
@@ -42,13 +43,22 @@ def new_task(task_id: str):
     logger.info(f"Running task => {task.id} for [{wallet.wallet_id}] wallet")
     
     t_manager = TransactionManager(wallet.wallet_id, last_x_days=2)
-    tokens_traded = t_manager.get_transaction_coins_for_x_days()
+    # tokens_traded = t_manager.get_transaction_coins_for_x_days()
     
-    wallet.tokens_traded = tokens_traded
-    wallet.status = "completed"
-    wallet.save()
+    # wallet.tokens_traded_list = tokens_traded
+    # wallet.status = "completed"
+    # wallet.save()
     
+    trade_datas = []
     # Get raydium links for each token
-    for token in wallet.tokens_traded:
-        pass
+    for token in wallet.tokens_traded_list:
+        try:
+            trade_data = t_manager.get_token_raydium_data(token)
+            trade_datas.append(trade_datas)
+        except NoPopupDataFound:
+            pass
+    
+    wallet.tokens_traded_data = trade_datas
+    wallet.save()
+    logger.info(f"All traded data saved successfully ...")
 

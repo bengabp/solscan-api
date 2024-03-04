@@ -1,0 +1,4 @@
+
+
+class NoPopupDataFound(Exception):
+    pass

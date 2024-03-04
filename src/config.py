@@ -82,7 +82,7 @@ simple_pydantic_model_config = ConfigDict(
     str_strip_whitespace=True,
     alias_generator=to_camel_case,
     populate_by_name=True,
-    extra="allow",
+    extra="ignore",
 )
 
 

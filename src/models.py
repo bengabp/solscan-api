@@ -1,41 +1,58 @@
-from typing import Optional, List, Dict, Annotated, Literal
+from typing import Optional, List, Dict, Annotated, Literal, Optional
 from uuid import UUID
 from datetime import datetime
 import pymongo
 from bunnet import Document, PydanticObjectId, Indexed
-from pydantic import Field, BaseModel
+from pydantic import Field, BaseModel, validator
 from pymongo import IndexModel
 
 from src.config import simple_pydantic_model_config, current_utc_timestamp
 
 OptionalString = Optional[str]
+OptionalInt = Optional[int]
+OptionalFloat = Optional[float]
 
 class TokenBase(BaseModel):
     model_config = simple_pydantic_model_config
     
     symbol: str = Field(description = "Token symbol")
-    logo: str = Field(description="Token logo")
+    logo: OptionalString = Field(description="Token logo")
     address: str = Field(description=  "Token address")
 
 class TokenTradeData(TokenBase):
     model_config = simple_pydantic_model_config
-    
-    bought: int = Field(description="Total bought amount")
-    sold: int = Field(description="Total sold amount")
-    pnl: int = Field(description="Pnl")
-    unrealized_amount: int = Field(description="Unrealized amount")
-    unrealized_relative: int = Field(description="Unrealized relative")
-    
-    tnt_buy:int = Field(description="Total number of tokens bought")
-    tnt_sell: int = Field(description="Total number of tokens sold")
-    
-    tnx_buy: int = Field("Number of buy transactions")
-    tnx_sell: int = Field("Number of sell transactions")
-    
-    market_share_info: List = Field(description="List of important informations", default=[])
-    
-    
 
+    buys:OptionalInt = Field(description="Total number of buy transactions")
+    sells: OptionalInt = Field(description="Total number of sell transactions")
+    volume_usd_sell: OptionalFloat = Field(description="Sell volume in usd")
+    volume_usd_buy: OptionalFloat = Field(description="Buy volume in usd")
+    amount_buy: OptionalString = Field(description= "Number of buy transactions")
+    amount_sell: OptionalString = Field(description= "Number of sell transactions")
+    balance_amount: OptionalString = Field(description="Balance amount")
+    balance_percentage: OptionalFloat = Field(description="Balance percentage")
+    first_swap: OptionalInt = Field(description="First swap -> UTC TIMESTAMP")
+
+    transaction_logs: List = Field(description="Historical transaction logs", default=[])
+    
+    @validator(
+        'volume_usd_sell', 
+        'volume_usd_buy', 
+        "amount_buy",
+        "amount_sell",
+        "balance_amount",
+        "buys",
+        "sells",
+        "balance_percentage",
+        "first_swap",
+        pre=True,
+        check_fields=False
+    )
+    def dash_to_null(cls, v):
+        if isinstance(v, str):
+            if v.strip() == "-":
+                return None
+        return v
+    
 class Wallet(Document):
     class Settings:
         name = "wallets"
@@ -57,7 +74,7 @@ class Wallet(Document):
     status: Literal["running", "queued", "completed"] = Field(default = "queued")
     tokens_traded_data: List[TokenTradeData] = Field(default=[])
     tokens_traded_list: List[TokenBase] = Field(default=[])
-
+    
 class Task(Document):
     class Settings:
         name = "tasks"
