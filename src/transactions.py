@@ -36,6 +36,7 @@ class TransactionManager:
         limit = 30
 
         tokens_traded = set()
+        symbol_data = {}
 
         headers = {
             'authority': 'multichain-api.birdeye.so',
@@ -81,9 +82,19 @@ class TransactionManager:
                                     transaction["timestamp"] = _timestamp
                                     transaction["account"] = self.account_hash
                                     transaction.pop("blockTime", None)
-                                    sorted_int = transaction.pop("sortedIns", [])
-                                    for token in transaction.pop("tokenChange", []):
-                                        tokens_traded.add(f"{token['address']}_____{token['symbol']}")
+                                    sorted_int = transaction.pop("tokenChange", [])
+                                    for token in transaction.pop("sortedIns", []):
+                                        for _type in ["from", "to"]:
+                                            symbol = token[_type]["symbol"]
+                                            address = token[_type]["address"]
+                                            logo = token[_type]["icon"]
+                                            symb_addr = f"{address}_____{symbol}"
+                                            tokens_traded.add(symb_addr)
+                                            symbol_data[symb_addr] = {
+                                                "symbol": symbol,
+                                                "logo": logo,
+                                                "address": address
+                                            }
                                 else:
                                     loop = False
                                     logger.info(f"All transactions for last {self.last_x_days} days complete")
@@ -103,15 +114,19 @@ class TransactionManager:
                 pass
         
         tokens_traded = list(tokens_traded)
+        tokens_traded_full_data = [
+            symbol_data[symb_addr]
+            for symb_addr in tokens_traded
+        ]
         logger.info(
-            f"Total tokens traded within last {self.last_x_days} days for account [{self.account_hash} => {len(tokens_traded)}")
+            f"Total tokens traded within last {self.last_x_days} days for account [{self.account_hash} => {len(tokens_traded_full_data)}")
 
         # Save tokens traded
-        return tokens_traded
+        return tokens_traded_full_data
     
 
 
-if __name__ == "__main__":
-    account_hash = "2bhkQ6uVn32ddiG4Fe3DVbLsrExdb3ubaY6i1G4szEmq"
-    manager = TransactionManager(account_hash)
-    manager.get_transaction_coins_for_x_days()
+# if __name__ == "__main__":
+#     account_hash = "2bhkQ6uVn32ddiG4Fe3DVbLsrExdb3ubaY6i1G4szEmq"
+#     manager = TransactionManager(account_hash)
+#     manager.get_transaction_coins_for_x_days()

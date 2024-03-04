@@ -23,7 +23,7 @@ dramatiq.set_broker(redis_broker)
 
 init_db([Task, Wallet])
 
-@dramatiq.actor(store_results=True)
+@dramatiq.actor()
 def new_task(task_id: str):
     task_id = PydanticObjectId(task_id)
     
@@ -41,10 +41,14 @@ def new_task(task_id: str):
     # Get traded tokens in last 7 days
     logger.info(f"Running task => {task.id} for [{wallet.wallet_id}] wallet")
     
-    t_manager = TransactionManager(wallet.wallet_id, last_x_days=7)
+    t_manager = TransactionManager(wallet.wallet_id, last_x_days=2)
     tokens_traded = t_manager.get_transaction_coins_for_x_days()
     
     wallet.tokens_traded = tokens_traded
     wallet.status = "completed"
     wallet.save()
+    
+    # Get raydium links for each token
+    for token in wallet.tokens_traded:
+        pass
 

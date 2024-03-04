@@ -10,6 +10,31 @@ from src.config import simple_pydantic_model_config, current_utc_timestamp
 
 OptionalString = Optional[str]
 
+class TokenBase(BaseModel):
+    model_config = simple_pydantic_model_config
+    
+    symbol: str = Field(description = "Token symbol")
+    logo: str = Field(description="Token logo")
+    address: str = Field(description=  "Token address")
+
+class TokenTradeData(TokenBase):
+    model_config = simple_pydantic_model_config
+    
+    bought: int = Field(description="Total bought amount")
+    sold: int = Field(description="Total sold amount")
+    pnl: int = Field(description="Pnl")
+    unrealized_amount: int = Field(description="Unrealized amount")
+    unrealized_relative: int = Field(description="Unrealized relative")
+    
+    tnt_buy:int = Field(description="Total number of tokens bought")
+    tnt_sell: int = Field(description="Total number of tokens sold")
+    
+    tnx_buy: int = Field("Number of buy transactions")
+    tnx_sell: int = Field("Number of sell transactions")
+    
+    market_share_info: List = Field(description="List of important informations", default=[])
+    
+    
 
 class Wallet(Document):
     class Settings:
@@ -30,8 +55,8 @@ class Wallet(Document):
     
     wallet_id: str = Field(description = "wallet id")
     status: Literal["running", "queued", "completed"] = Field(default = "queued")
-    data: Dict = Field(default={})
-    tokens_traded: List = Field(default=[])
+    tokens_traded_data: List[TokenTradeData] = Field(default=[])
+    tokens_traded_list: List[TokenBase] = Field(default=[])
 
 class Task(Document):
     class Settings:
