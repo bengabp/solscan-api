@@ -1,0 +1,11 @@
+version: '3'
+
+services:
+  dexscreener_api:
+    build: Dockerfile.express
+  
+  backend:
+    build: Dockerfile.backend
+
+  frontend:
+    build: Dockerfile.frontend

@@ -8,9 +8,10 @@ from pymongo import MongoClient
 from pydantic import ConfigDict
 from typing import List
 from datetime import datetime
+from starlette.config import Config
 
 
-BASE_DIR = "C:/Users/bengabp/Documents/IT/UKTeam/SolanaScan"
+BASE_DIR = "/".join(os.path.dirname(os.path.realpath(__file__)).split("/")[:-1])
 
 
 def create_dir(name):
@@ -18,6 +19,9 @@ def create_dir(name):
     os.makedirs(fullpath, exist_ok=True)
     return fullpath
 
+config = Config()
+
+logs_dir = create_dir("logs")
 
 HEADERS = {
     "authority": "planning.adur-worthing.gov.uk",
@@ -35,48 +39,28 @@ HEADERS = {
     "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
 }
 
-MONGODB_URI = "mongodb://localhost:27017"
 MONGODB_DB_NAME = "SolanaScan"
 
+MONGODB_URI = config("MONBGODB_URI",default= "mongodb://localhost:27017")
+BROKER_URI = config("BROKER_URI", default="redis://127.0.0.1:6379/0")
+DEXSCREENER_API_URI = config("DEXSCREENER_API_URI", default="http://localhost:3000")
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-
-formatter = ColoredFormatter(
-    "SolanaScan -> %(log_color)s%(asctime)s%(reset)s - %(process)s - %(log_color)s%(levelname)s%(reset)s - %(message)s",
-    datefmt="%B %d, %Y : %I:%M:%S%p",
-    log_colors={
-        "DEBUG": "green",
-        "INFO": "blue",
-        "WARNING": "yellow",
-        "ERROR": "red",
-        "CRITICAL": "red,bg_white",
-    },
+dramatiq_logger = logging.getLogger("dramatiq")
+file_handler = logging.FileHandler(
+    filename=os.path.join(logs_dir,"drmatiq.log"),
+    mode="a",
 )
-
-# Create a console handler
-console_handler = logging.StreamHandler()
-
-# Set the formatter for the console handler
-console_handler.setFormatter(formatter)
-logger.addHandler(console_handler)
+file_handler.setFormatter(logging.Formatter('[%(asctime)s] [PID %(process)d] [%(threadName)s] [%(name)s] [%(levelname)s] %(message)s'))
+dramatiq_logger.addHandler(file_handler)
 
 def current_utc_timestamp() -> int:
     return int(datetime.now().timestamp())
 
-
-
 def to_camel_case(snake_str: str):
-    """
-    Converts a string in snake case to camel case
-    :param snake_str: A string in snake case
-    :return: A string in camel case"""
-
     components = snake_str.split("_")
     components = [components[0]] + [x.capitalize() for x in components[1:]]
     camel_case_str = "".join(components)
     return camel_case_str
-
 
 simple_pydantic_model_config = ConfigDict(
     str_strip_whitespace=True,
@@ -85,21 +69,6 @@ simple_pydantic_model_config = ConfigDict(
     extra="ignore",
 )
 
-
 def init_db(models: List):
-    """
-    Initializes the database connection using async motor driver
-    :param models: A list of models to add
-    """
-    
-    
-    
     client = MongoClient(MONGODB_URI)
     init_bunnet(database = client.get_default_database(MONGODB_DB_NAME), document_models = models)
-    
-async def init_async_db(models: List):
-    client = motor.motor_asyncio.AsyncIOMotorClient(MONGODB_URI)
-    await init_beanie(
-        database=client.get_default_database(MONGODB_DB_NAME), document_models=models
-    )
-    

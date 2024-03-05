@@ -5,13 +5,11 @@ import httpx
 from curl_cffi import requests
 from datetime import datetime, timedelta
 from src.models import TokenBase, TokenTradeData
-from src.config import init_db
+from src.config import init_db, DEXSCREENER_API_URI, dramatiq_logger
 import logging
 import requests as generic_requests
 from src.exceptions import NoPopupDataFound
 
-
-logger = logging.getLogger(__name__)
 
 
 class TransactionManager:
@@ -82,7 +80,7 @@ class TransactionManager:
                         if _data:
                             has_next = _data.get("hasNext", False)
                             transactions = _data.get("items", [])
-                            logger.info(f"Saving {len(transactions)} transactions for {self.account_hash} [{offset}]")
+                            dramatiq_logger.info(f"Saving {len(transactions)} transactions for {self.account_hash} [{offset}]")
                             for transaction in transactions:
                                 block_time = transaction["blockTime"]
                                 _transaction_datetime, _timestamp = self.compute_timestamp(block_time)
@@ -107,18 +105,18 @@ class TransactionManager:
                                             }
                                 else:
                                     loop = False
-                                    logger.info(f"All transactions for last {self.last_x_days} days complete")
+                                    dramatiq_logger.info(f"All transactions for last {self.last_x_days} days complete")
                                     break
                             if has_next:
                                 offset += limit
                             else:
-                                logger.info("No next results ...")
+                                dramatiq_logger.info("No next results ...")
                                 loop = False
                     else:
-                        logger.info(f"Request unsuccessful => {json_data}")
+                        dramatiq_logger.info(f"Request unsuccessful => {json_data}")
                         loop = True
             elif response.status_code == 429:
-                logger.info("Too many requests .. sleeping for some time ...")
+                dramatiq_logger.info("Too many requests .. sleeping for some time ...")
                 time.sleep(60)
             else:
                 pass
@@ -128,7 +126,7 @@ class TransactionManager:
             TokenBase.model_validate(symbol_data[symb_addr])
             for symb_addr in tokens_traded
         ]
-        logger.info(
+        dramatiq_logger.info(
             f"Total tokens traded within last {self.last_x_days} days for account [{self.account_hash} => {len(tokens_traded_full_data)}")
 
         # Save tokens traded
@@ -171,7 +169,7 @@ class TransactionManager:
 
         value = self.send_until_ok(
             'https://io.dexscreener.com/dex/search/v4/pairs', 
-            'http://localhost:3000/pairs',
+            f'{DEXSCREENER_API_URI}/pairs',
             params=params, 
             cookies=cookies, 
             headers=headers
@@ -228,7 +226,7 @@ class TransactionManager:
 
             _logs = self.send_until_ok(
                 f'https://io.dexscreener.com/dex/log/amm/v2/solamm/all/solana/{raydium_pair_address}',
-                "http://localhost:3000/logs",
+                f"{DEXSCREENER_API_URI}/logs",
                 params=params,
                 headers=headers,
                 cookies={}
@@ -283,12 +281,12 @@ class TransactionManager:
                         value = _json["value"]
                         return value
                 elif response.status_code in [429]:
-                    logger.info("too many requests.. sleeping ...")
+                    dramatiq_logger.info("too many requests.. sleeping ...")
                     time.sleep(60)
                 else:
-                    logger.info(f"Request failed ... with status {response.status_code}")
+                    dramatiq_logger.info(f"Request failed ... with status {response.status_code}")
             except (json.JSONDecodeError, generic_requests.JSONDecodeError) as err:
-                logger.info("falied to decode data")
+                dramatiq_logger.info("falied to decode data")
         
         
 # if __name__ == "__main__":
