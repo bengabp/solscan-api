@@ -91,6 +91,7 @@ class TransactionManager:
                             has_next = _data.get("hasNext", False)
                             transactions = _data.get("items", [])
                             dramatiq_logger.info(f"Saving {len(transactions)} transactions for {self.account_hash} [{offset}]")
+                            # print(f"Saving {len(transactions)} transactions for {self.account_hash} [{offset}]")
                             for transaction in transactions:
                                 block_time = transaction["blockTime"]
                                 _transaction_datetime, _timestamp = self.compute_timestamp(block_time)
@@ -120,7 +121,7 @@ class TransactionManager:
                             
                             if transactions:
                                 last_transaction =transactions[-1]
-                                _transaction_datetime, _timestamp = self.compute_timestamp(last_transaction["blockTime"])
+                                _transaction_datetime, _timestamp = self.compute_timestamp(last_transaction["timestamp"])
                                 if _transaction_datetime < self.last_x_days_date:
                                     loop = False
                                     break      
@@ -138,7 +139,7 @@ class TransactionManager:
             else:
                 pass
                 
-            time.sleep(1)
+            time.sleep(0.3)
         
         tokens_traded = list(tokens_traded) 
         tokens_traded_full_data = [
@@ -308,12 +309,13 @@ class TransactionManager:
                 dramatiq_logger.info("falied to decode data")
         
         
-# if __name__ == "__main__":
-#     account_hash = "2bhkQ6uVn32ddiG4Fe3DVbLsrExdb3ubaY6i1G4szEmq"
-#     manager = TransactionManager(account_hash)
-#     # manager.get_transaction_coins_for_x_days()
-#     manager.get_token_raydium_data(TokenBase.model_validate({
-#       "symbol": "ZERO",
-#       "logo": "https://img.fotofolio.xyz/?url=https%3A%2F%2Fgateway.irys.xyz%2F0qYdLixPAk4cYEpaf3ylqZ-JIbw8Vqg6R9xXZrH9SCc",
-#       "address": "93RC484oMK5T9H89rzT5qiAXKHGP9jscXfFfrihNbe57"
-#     }))
+if __name__ == "__main__":
+    account_hash = "EvNiWNAAFmgQDNj8CoPD9HZAEGYUgq2B9h6pMAhQwEYF"
+    manager = TransactionManager(account_hash, last_x_days=2)
+    t = manager.get_transaction_coins_for_x_days()
+    print(t)
+    # manager.get_token_raydium_data(TokenBase.model_validate({
+    #   "symbol": "ZERO",
+    #   "logo": "https://img.fotofolio.xyz/?url=https%3A%2F%2Fgateway.irys.xyz%2F0qYdLixPAk4cYEpaf3ylqZ-JIbw8Vqg6R9xXZrH9SCc",
+    #   "address": "93RC484oMK5T9H89rzT5qiAXKHGP9jscXfFfrihNbe57"
+    # }))
