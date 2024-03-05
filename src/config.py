@@ -41,9 +41,9 @@ HEADERS = {
 
 MONGODB_DB_NAME = "SolanaScan"
 
-MONGODB_URI = config("MONBGODB_URI",default= "mongodb://localhost:27017")
-BROKER_URI = config("BROKER_URI", default="redis://127.0.0.1:6379/0")
-DEXSCREENER_API_URI = config("DEXSCREENER_API_URI", default="http://localhost:3000")
+MONGODB_URI = config("MONGODB_URI")#,default= "mongodb://localhost:27017")
+BROKER_URI = config("BROKER_URI")#, default="redis://127.0.0.1:6379/0")
+DEXSCREENER_API_URI = config("DEXSCREENER_API_URI")#, default="http://localhost:3000")
 
 dramatiq_logger = logging.getLogger("dramatiq")
 file_handler = logging.FileHandler(

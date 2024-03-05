@@ -4,8 +4,8 @@ import multiprocessing
 from src.config import logs_dir
 import os
 
-max_requests = 1000
-max_requests_jitter = 50
+# max_requests = 1000
+# max_requests_jitter = 50
 
 accesslog = os.path.join(logs_dir, "gunicorn_access.log")
 access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s"'
