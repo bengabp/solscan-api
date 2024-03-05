@@ -27,8 +27,7 @@ class TransactionManager:
         r = generic_requests.request("POST", url, files=files).json()
         return r
 
-    @staticmethod
-    def compute_timestamp(timestamp: int):
+    def compute_timestamp(self, timestamp: int):
         if self.platform == "Windows":
             time_convert_exception_class = OSError
         else:
@@ -41,6 +40,7 @@ class TransactionManager:
             _timestamp = timestamp / 1000
             _date = datetime.fromtimestamp(_timestamp)
         
+        return _date, _timestamp
 
     def get_transaction_coins_for_x_days(self):
         timeout = 60 * 10
@@ -77,7 +77,11 @@ class TransactionManager:
             }
 
             url = "https://multichain-api.birdeye.so/solana/trader_profile/trader_txs"
-            response = requests.get(url, params=params, headers=headers, timeout=timeout)
+            try:
+                response = requests.get(url, params=params, headers=headers, timeout=timeout)
+            except requests.errors.RequestsError:
+                dramatiq_logger.warning(f"Failed to perform, curl 23: Retrying ...")
+                continue
             if response.status_code in [200]:
                 json_data = response.json()
                 if json_data:
@@ -113,6 +117,13 @@ class TransactionManager:
                                     loop = False
                                     dramatiq_logger.info(f"All transactions for last {self.last_x_days} days complete")
                                     break
+                            
+                            if transactions:
+                                last_transaction =transactions[-1]
+                                _transaction_datetime, _timestamp = self.compute_timestamp(last_transaction["blockTime"])
+                                if _transaction_datetime < self.last_x_days_date:
+                                    loop = False
+                                    break      
                             if has_next:
                                 offset += limit
                             else:
@@ -126,6 +137,8 @@ class TransactionManager:
                 time.sleep(60)
             else:
                 pass
+                
+            time.sleep(1)
         
         tokens_traded = list(tokens_traded) 
         tokens_traded_full_data = [

@@ -35,7 +35,7 @@ def new_task(task_id: str):
     # Get traded tokens in last 7 days
     dramatiq_logger.info(f"Running task => {task.id} for [{wallet.wallet_id}] wallet")
     
-    t_manager = TransactionManager(wallet.wallet_id, last_x_days=2)
+    t_manager = TransactionManager(wallet.wallet_id, last_x_days=7)
     tokens_traded = t_manager.get_transaction_coins_for_x_days()
     
     wallet.tokens_traded_list = tokens_traded
