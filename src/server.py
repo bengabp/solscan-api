@@ -8,9 +8,17 @@ from src.config import init_db, simple_pydantic_model_config, current_utc_timest
 from beanie import PydanticObjectId
 from pymongo.errors import DuplicateKeyError
 from src.tasks import new_task as add_new_task
+from fastapi.middleware.cors import CORSMiddleware
 
 
 api = FastAPI()
+api.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 
 class TrackWalletRequest(BaseModel):
     model_config = simple_pydantic_model_config

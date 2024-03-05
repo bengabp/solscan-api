@@ -30,9 +30,13 @@ const App = () => {
           width: "100%",
         }}
       >
-        <HomeAppBar />
+        <HomeAppBar isLoading={isLoading} />
         <Routes>
-          <Route index element={<Home />} />
+          <Route index element={
+            <Home 
+              isLoading={isLoading}
+              setIsLoading={setIsLoading}
+            />} />
           <Route path="/accounts/:id" Component={DetailedPage} />
         </Routes>
       </Stack>

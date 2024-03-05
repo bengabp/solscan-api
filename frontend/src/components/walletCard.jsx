@@ -3,10 +3,20 @@ import Typography from "@mui/material/Typography";
 import { CardActionArea } from "@mui/material";
 import PropTypes from "prop-types";
 
-export default function ClickableWalletCard({ id, balance }) {
+export default function ClickableWalletCard(props) {
+  // Ensure the text is long enough to apply the truncation logic
+  const text = props.account.walletId;
+  const truncatedText = text.length > 7 ? `${text.slice(0, 3)}...${text.slice(-4)}` : text;
+
+  // Function to handle text copy
+  const handleCopy = () => {
+    navigator.clipboard.writeText(text);
+    // Optionally, provide user feedback that text has been copied
+  };
+
   return (
     <a
-      href={`/accounts/${id}`}
+      href={`/accounts/${props.id}`}
       style={{
         color: "black",
       }}
@@ -14,12 +24,20 @@ export default function ClickableWalletCard({ id, balance }) {
       <div className="container-card shadow-md">
         <CardActionArea className="padding-1">
           <CardContent>
-            <Typography gutterBottom variant="h5" component="div">
-              Lizard
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Lizards are a widespread group of squamate reptiles, with over
-              6,000 species, ranging across all continents except Antarctica
+            <Typography 
+              gutterBottom
+              component="div"
+              onClick={handleCopy}
+              variant="body1"
+              style={{
+                wordWrap: 'break-word',
+                whiteSpace: 'pre-wrap',
+                cursor: 'pointer',
+                userSelect: 'none',
+                fontWeight: 'bold',
+              }}
+            >
+              {truncatedText}
             </Typography>
           </CardContent>
         </CardActionArea>
@@ -27,8 +45,3 @@ export default function ClickableWalletCard({ id, balance }) {
     </a>
   );
 }
-
-ClickableWalletCard.propTypes = {
-  id: PropTypes.string.isRequired,
-  balance: PropTypes.number.isRequired,
-};

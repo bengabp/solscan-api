@@ -19,6 +19,7 @@ const HomeAppBar = (props) => {
             Solana Scan
           </Typography>
         </Toolbar>
+        {props.isLoading && <LinearProgress />}
       </AppBar>
     </Box>
   );
