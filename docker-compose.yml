@@ -1,11 +1,45 @@
 version: '3'
 
 services:
-  dexscreener_api:
-    build: Dockerfile.express
-  
-  backend:
-    build: Dockerfile.backend
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #   ports:
+  #     - "8098:3000"
+  #   env_file: &app_env
+  #     - .env
+  #   depends_on:
+  #     - api
+  #   restart: always
 
-  frontend:
-    build: Dockerfile.frontend
+  api:
+    build: &backend_build
+      context: .
+    ports:
+      - "8070:8080"
+    volumes: &backend_volumes
+      - ./logs:/app/logs
+    restart: always
+    depends_on:
+      - worker
+    env_file: &app_env
+      - .env
+
+  dexscreener:
+    build:
+      context: ./dexscreener
+    env_file: *app_env
+  
+  worker:
+    build: *backend_build
+    volumes: *backend_volumes
+    restart: always
+    env_file: *app_env
+    command: ["dramatiq" ,"src.tasks"]
+    environment:
+      - BROKER_URI="redis://redisdb/0"
+      - DEXSCREENER_API_URI="http://dexscreener:3000"
+
+  redisdb:
+    image: redis:latest
+    restart: always
