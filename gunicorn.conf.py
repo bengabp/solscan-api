@@ -8,9 +8,10 @@ max_requests = 1000
 max_requests_jitter = 50
 
 accesslog = os.path.join(logs_dir, "gunicorn_access.log")
-access_log_format = '[%(asctime)s] [PID %(process)d] [%(threadName)s] [%(name)s] [%(levelname)s] %(message)s'
+access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s"'
 
 bind = "0.0.0.0:8080"
 
 worker_class = "uvicorn.workers.UvicornWorker"
-workers = (multiprocessing.cpu_count() * 2) + 1
+workers = 4
+worker_memory_limit = 1000 * 1024 * 1024  # 1000 MB in bytes

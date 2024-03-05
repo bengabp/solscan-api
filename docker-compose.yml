@@ -24,11 +24,15 @@ services:
       - worker
     env_file: &app_env
       - .env
+    environment: &app_env_direct
+      - BROKER_URI="redis://redisdb"
+      - DEXSCREENER_API_URI="http://dexscreener:3000"
 
   dexscreener:
     build:
       context: ./dexscreener
     env_file: *app_env
+    command: "echo $BROKER_URI"
   
   worker:
     build: *backend_build
@@ -36,9 +40,7 @@ services:
     restart: always
     env_file: *app_env
     command: ["dramatiq" ,"src.tasks"]
-    environment:
-      - BROKER_URI="redis://redisdb/0"
-      - DEXSCREENER_API_URI="http://dexscreener:3000"
+    environment: *app_env_direct
 
   redisdb:
     image: redis:latest
