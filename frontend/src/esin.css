@@ -45,6 +45,15 @@
   flex-direction: column;
 }
 
+.bg-white {
+  --tw-bg-opacity: 1;
+  background-color: rgba(255, 255, 255, var(--tw-bg-opacity));
+}
+
+.mt-4 {
+  margin-top: 4rem;
+}
+
 /* Medium screens */
 @media (min-width: 768px) {
   .grid {

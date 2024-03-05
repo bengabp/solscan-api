@@ -39,12 +39,11 @@ function Home() {
         </Stack>
         <div className="grid padding-y-1">
           {users.map((user, index) => (
-            // <tr key={user.id}>
-            // <td>{user.id}</td>
-            // <td>{user.name}</td>
-            // <td>${user.balance}</td>
-            // </tr>
-            <ClickableWalletCard key={index} balance={user.balance} />
+            <ClickableWalletCard
+              key={index}
+              balance={user.balance}
+              id={index.toString()}
+            />
           ))}
         </div>
       </div>

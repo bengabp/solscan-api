@@ -7,6 +7,7 @@ import SideNav from "./components/SideNav";
 import Home from "./pages/Home";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import CssBaseline from "@mui/material/CssBaseline";
+import DetailedPage from "./pages/Details";
 
 const theme = createTheme({
   typography: {
@@ -32,6 +33,7 @@ const App = () => {
         <HomeAppBar />
         <Routes>
           <Route index element={<Home />} />
+          <Route path="/accounts/:id" Component={DetailedPage} />
         </Routes>
       </Stack>
     </BrowserRouter>
