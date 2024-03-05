@@ -9,7 +9,7 @@ from src.config import init_db, DEXSCREENER_API_URI, dramatiq_logger
 import logging
 import requests as generic_requests
 from src.exceptions import NoPopupDataFound
-
+import platform
 
 
 class TransactionManager:
@@ -17,6 +17,7 @@ class TransactionManager:
         self.account_hash = account_hash
         self.last_x_days = last_x_days
         self.last_x_days_date = datetime.today() - timedelta(days=self.last_x_days + 1)
+        self.platform = platform.system()
         
     def parse_avro_bytes(self, url, content: bytes) -> Dict:
         files=[
@@ -28,13 +29,18 @@ class TransactionManager:
 
     @staticmethod
     def compute_timestamp(timestamp: int):
+        if self.platform == "Windows":
+            time_convert_exception_class = OSError
+        else:
+            time_convert_exception_class = ValueError
+
         try:
             _timestamp = timestamp
             _date = datetime.fromtimestamp(_timestamp)
-        except OSError:
+        except time_convert_exception_class:
             _timestamp = timestamp / 1000
             _date = datetime.fromtimestamp(_timestamp)
-        return _date, _timestamp
+        
 
     def get_transaction_coins_for_x_days(self):
         timeout = 60 * 10

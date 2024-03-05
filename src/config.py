@@ -19,7 +19,10 @@ def create_dir(name):
     os.makedirs(fullpath, exist_ok=True)
     return fullpath
 
-config = Config()
+try:
+    config = Config(".env")
+except:
+    config = Config()
 
 logs_dir = create_dir("logs")
 
