@@ -83,7 +83,9 @@ function Home(props) {
             endIcon={!addingNewWallet && <AddIcon />}
             disabled={addingNewWallet ? true : false}
             onClick={() => {
-              create_task(inputWalletAddress)
+              if (inputWalletAddress.trim()){
+                create_task(inputWalletAddress.trim())
+              }
             }}
           >
             {addingNewWallet ? "Adding ..." : "Add wallet"}
