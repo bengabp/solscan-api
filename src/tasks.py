@@ -17,8 +17,9 @@ dramatiq.set_broker(redis_broker)
 
 init_db([Task, Wallet])
 
-@dramatiq.actor(max_retries=1)
+@dramatiq.actor(max_retries=1, time_limit=5000000)
 def new_task(task_id: str):
+    
     task_id = PydanticObjectId(task_id)
     
     task = Task.find(Task.id == task_id).first_or_none()

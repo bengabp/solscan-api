@@ -121,7 +121,13 @@ class TransactionManager:
                             
                             if transactions:
                                 last_transaction =transactions[-1]
-                                _transaction_datetime, _timestamp = self.compute_timestamp(last_transaction["timestamp"])
+                                __timestamp = None
+                                try:
+                                    __timestamp = last_transaction["timestamp"]
+                                except KeyError:
+                                    __timestamp = last_transaction["blockTime"]
+                                    
+                                _transaction_datetime, _timestamp = self.compute_timestamp(__timestamp)
                                 if _transaction_datetime < self.last_x_days_date:
                                     loop = False
                                     break      

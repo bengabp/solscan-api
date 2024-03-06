@@ -22,3 +22,21 @@ nav {
   animation: flash 1s infinite;
 }
 
+.tokenActive{
+  z-index: 9999;
+  content: "";
+}
+
+.tokenActive:before{
+  background-color: #1767b7;
+  content: "";
+  height: 8px;
+  width: 8px;
+  position: relative;
+  display: block;
+  left: -10px;
+  bottom: -50%;
+  border-radius: 50%;
+  margin: 0;
+  padding: 0;
+}
