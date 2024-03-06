@@ -8,15 +8,17 @@ import AddIcon from "@mui/icons-material/Add";
 import CustomSearchBar from "../components/SearchBar";
 import ClickableWalletCard from "../components/walletCard";
 
+export const API_URI = "http://localhost:8070";
+
 function Home(props) {
   // Generate wallet data for 100 users
 
   const [data, setData] = React.useState([]);
-  const API_URI = "http://localhost:8070";
   const [inputWalletAddress, setInputWalletAddress] = React.useState("");
   const [addingNewWallet, setAddingNewWallet] = React.useState(false);
 
   React.useEffect(() => {
+    props.setIsLoading(true)
     fetch(`${API_URI}/wallets`)
       .then(response => response.json())
       .then(data => {

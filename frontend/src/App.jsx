@@ -16,7 +16,7 @@ const theme = createTheme({
 });
 
 const App = () => {
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [currentTab, setCurrentTab] = useState("home");
 
   // const pageNavigation
@@ -28,6 +28,9 @@ const App = () => {
         direction="column"
         sx={{
           width: "100%",
+          display:"flex",
+          flexDirection:"column",
+          height: "100%",
         }}
       >
         <HomeAppBar isLoading={isLoading} />
@@ -37,7 +40,11 @@ const App = () => {
               isLoading={isLoading}
               setIsLoading={setIsLoading}
             />} />
-          <Route path="/accounts/:id" Component={DetailedPage} />
+          <Route path="/accounts/:id" element={
+            <DetailedPage 
+              isLoading={isLoading}
+              setIsLoading={setIsLoading}
+            />} />
         </Routes>
       </Stack>
     </BrowserRouter>

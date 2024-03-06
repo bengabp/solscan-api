@@ -10,3 +10,15 @@ nav {
   gap: 10px;
   align-items: center;
 }
+
+@keyframes flash {
+  0% { border-color: #ff9d00; }
+  50% { border-color: transparent; }
+  100% { border-color: #ff9d00; }
+}
+
+.flashingBorder {
+  border: 1px solid transparent;
+  animation: flash 1s infinite;
+}
+

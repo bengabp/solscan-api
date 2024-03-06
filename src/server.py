@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, Response, status, HTTPException
+from fastapi import FastAPI, Request, Response, status, HTTPException, Path
 from pydantic import BaseModel, Field
 from typing import Optional
 from starlette.staticfiles import StaticFiles
@@ -56,6 +56,15 @@ def track_new_wallet(request: Request,  response: Response, create_request: Trac
     r = add_new_task.send(str(new_task.id))
     
     response.status_code = status.HTTP_201_CREATED
+    return wallet
+
+@api.get("/wallets/{wallet_id}")
+def get_wallet(request: Request, response: Response, wallet_id: str = Path()):
+    wallet = Wallet.find(Wallet.wallet_id == wallet_id).first_or_none()
+    if wallet:
+        response.status_code == status.HTTP_200_OK
+    else:
+        response.status_code == status.HTTP_404_NOT_FOUND
     return wallet
 
 
