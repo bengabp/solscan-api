@@ -210,7 +210,14 @@ export default function DetailedPage(props) {
                   ))}
                 </Box>
                 <Stack paddingTop={2} spacing={1}>
-                  <Typography align="left" variant="h6">Transactions for last 7 days</Typography>
+                  <Stack direction="row" spacing={1}>
+                    <Typography 
+                      align="left" 
+                      variant="h5"
+                      fontWeight={"bold"}
+                    >{currentToken.transactionLogs.length}</Typography>
+                    <Typography align="left" variant="h6">{currentToken.transactionLogs.length === 1 ? "transaction in the last 7 days" : "transactions in the last 7 days"}</Typography>
+                  </Stack>
                   <TransactionHistoryTable pair={currentToken.symbol} transactionLogs={currentToken.transactionLogs}></TransactionHistoryTable>
                 </Stack>
               </Stack> 
@@ -224,7 +231,11 @@ export default function DetailedPage(props) {
                   justifyContent:"center"
                 }}
               >
-                <Typography align="center" variant="h6">Click on a token to view details</Typography>
+                {
+                  data.tokensTradedList.length > 0 ?
+                  <Typography align="center" variant="h6">Click on a token to view details</Typography>:
+                  <Typography align="center" variant="h6">No trade data is available for this wallet currently ...</Typography>
+                }
               </Box>
           }
         </Stack>}

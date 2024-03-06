@@ -94,7 +94,7 @@ export default function TransactionHistoryTable(props) {
                       const value = row[column.id];
                       return (
                         <TableCell key={column.id} align={column.align}>
-                          {column.id === "blockTimestamp" ? convertUTCtoLocal(value) : value}
+                          {column.id === "blockTimestamp" ? convertUTCtoLocal(value) : column.id === "priceUsd" ? "$"+value : value}
                         </TableCell>
                       );
                     })}
