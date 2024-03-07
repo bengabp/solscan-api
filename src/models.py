@@ -19,7 +19,7 @@ class TokenBase(BaseModel):
     logo: OptionalString = Field(description="Token logo")
     address: str = Field(description=  "Token address")
 
-class TokenTradeData(TokenBase):
+class TokenDexscreenerData(BaseModel):
     model_config = simple_pydantic_model_config
 
     buys:OptionalInt = Field(description="Total number of buy transactions")
@@ -31,8 +31,8 @@ class TokenTradeData(TokenBase):
     balance_amount: OptionalString = Field(description="Balance amount")
     balance_percentage: OptionalFloat = Field(description="Balance percentage")
     first_swap: OptionalInt = Field(description="First swap -> UTC TIMESTAMP")
-
-    transaction_logs: List = Field(description="Historical transaction logs", default=[])
+    pair_address: str = Field(description="Raydium pair address")
+    pnl: OptionalString = Field(description="PNL", default=None)
     
     @validator(
         'volume_usd_sell', 
@@ -52,6 +52,23 @@ class TokenTradeData(TokenBase):
             if v.strip() == "-":
                 return None
         return v
+    
+class TokenTradeData(TokenBase):
+    model_config = simple_pydantic_model_config
+
+    buys:OptionalInt = Field(description="Total number of buy transactions")
+    sells: OptionalInt = Field(description="Total number of sell transactions")
+    volume_usd_sell: OptionalFloat = Field(description="Sell volume in usd")
+    volume_usd_buy: OptionalFloat = Field(description="Buy volume in usd")
+    amount_buy: OptionalString = Field(description= "Number of buy transactions")
+    amount_sell: OptionalString = Field(description= "Number of sell transactions")
+    balance_amount: OptionalString = Field(description="Balance amount")
+    balance_percentage: OptionalFloat = Field(description="Balance percentage")
+    first_swap: OptionalInt = Field(description="First swap -> UTC TIMESTAMP")
+
+    transaction_logs: List = Field(description="Historical transaction logs", default=[])
+    
+    
     
 class Wallet(Document):
     class Settings:
