@@ -3,6 +3,7 @@ import time
 from typing import List, Dict, Optional
 import httpx
 from curl_cffi import requests
+from requests.auth import HTTPProxyAuth
 from datetime import datetime, timedelta
 from src.models import TokenBase, TokenDexscreenerData
 from src.config import init_db, DEXSCREENER_API_URI, dramatiq_logger
