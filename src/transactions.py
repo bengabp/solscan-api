@@ -11,6 +11,7 @@ import requests as generic_requests
 from src.exceptions import NoPopupDataFound
 import platform
 from pprint import pprint
+from src.utils import get_random_ua
 
 
 class TransactionManager:
@@ -144,6 +145,7 @@ class TransactionManager:
         
     def dexscreener_send_until_ok(self, url, parser_url, headers, params, cookies):
         while True:
+            headers['user-agent'] = get_random_ua()
             try:
                 response = requests.get(url, headers=headers, params=params, cookies=cookies)
                 if response.status_code in [200]:
@@ -162,6 +164,7 @@ class TransactionManager:
         timeout = 60 * 10
         
         while True:
+            headers['user-agent'] = get_random_ua()
             try:
                 response = requests.get(url, params=params, headers=headers, timeout=timeout)
                 if response.status_code == 200:
