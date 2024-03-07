@@ -229,6 +229,17 @@ class TransactionManager:
         
         
 if __name__ == "__main__":
+    class Clogger:
+        def __init__(self):
+            pass
+        def info(self, msg):
+            print(f"[INFO] => {msg}")
+        def warning(self, msg):
+            print(f"[WARNING] => {msg}")
+        def error(self, msg):
+            print(f"[ERROR] => {msg}")  
+            
+    dramatiq_logger = Clogger()
     account_hash = "71WDyyCsZwyEYDV91Qrb212rdg6woCHYQhFnmZUBxiJ6"
     manager = TransactionManager(account_hash)
     
