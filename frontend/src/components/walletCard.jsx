@@ -21,12 +21,6 @@ export default function ClickableWalletCard(props) {
   };
 
   return (
-    // <a
-    //   href={`/accounts/${props.id}`}
-    //   style={{
-    //     color: "#979797",
-    //   }}
-    // >
     <div className="container-card shadow-md">
       <CardActionArea className="padding-0" disableRipple={true} style={{
         cursor: "default"
@@ -46,7 +40,7 @@ export default function ClickableWalletCard(props) {
             alignItems={"center"}
             width={"100%"}
           >
-            <a href={`/accounts/${props.id}`}>
+            <a href={`/accounts/${props.account.walletId}`}>
               <Typography 
                 gutterBottom
                 component="div"
@@ -85,12 +79,12 @@ export default function ClickableWalletCard(props) {
               }}
             >{props.account.status.toUpperCase()}</Typography>
           </Stack>
-          <Stack direction="row">
+          {/* <Stack direction="row">
             <Stack direction={'row'} spacing={0.5} paddingRight={1}>
               <TokenIcon htmlColor={"#1976d2b8"}></TokenIcon>
               <Typography className="textSmall" color={"#1976d2b8"}>{props.account.tokensTradedList.length}</Typography>
             </Stack>
-          </Stack>
+          </Stack> */}
         </CardContent>
       </CardActionArea>
     </div>

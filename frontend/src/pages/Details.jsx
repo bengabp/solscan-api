@@ -15,6 +15,11 @@ import Tooltip from '@mui/material/Tooltip';
 import { withTheme } from "@emotion/react";
 import TransactionHistoryTable from '../components/TransactionHistoryTable';
 import Divider from '@mui/material/Divider';
+import ButtonGroup from '@mui/material/ButtonGroup';
+import Button from "@mui/material/Button";
+import Paper from '@mui/material/Paper';
+import TokenChangeTable from '../components/TokenChangeTable';
+
 
 function formatValue(input) {
   if (input === null) {
@@ -36,7 +41,40 @@ function formatValue(input) {
   return input.toString() + suffixes[suffixIndex];
 }
 
+export function getTradeAmountColor(value) {
+  if (value === null || value === '-') {
+    return 'gray';
+  } else if (value.startsWith('-')) {
+    return 'red';
+  } else {
+    return 'green';
+  }
+}
 
+
+export function formatCurrency(number) {
+  // Convert the number to a string with 2 decimal places and add commas for thousands separators
+  const formattedNumber = Math.abs(number).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+
+  // Prepend a negative sign if the number is negative
+  const negativeSign = number < 0 ? '-' : '';
+
+  // Format the number as a currency string with the dollar sign
+  const currencyString = `${negativeSign}$${formattedNumber}`;
+
+  return currencyString;
+}
+
+
+
+function formatNumberWithCommas(number) {
+  // Format the number with commas for thousands separators
+  const formattedNumber = Number(number).toLocaleString('en-US');
+  return formattedNumber;
+}
 
 export default function DetailedPage(props) {
   // Page ID
@@ -44,23 +82,24 @@ export default function DetailedPage(props) {
   const navigation = useNavigate();
   const [data, setData] = React.useState({});
 
-  const attributes = [
-    "symbol",
-    "buys",
-    "sells",
-    "volumeUsdSell",
-    "volumeUsdBuy",
-    "balanceAmount",
-    "amountSell",
-    "amountBuy",
-    "balancePercentage"
-  ]
+  const overviewLabelMappings = {
+    "Yesterday":"tradeYesterday",
+    "Today":"tradeToday",
+    "1W":"trade7d",
+    "1M":"trade30d",
+    "2M":"trade60d",
+    "3M":"trade90d"
+  }
+  
+  
+  const [currentOverviewLabel, setCurrentOverviewLabel] = React.useState("Today")
+  const [currentOverviewData, setCurrentOverviewData] = React.useState(data[overviewLabelMappings[currentOverviewLabel]]);
 
   function goback() {
     navigation(-1);
   }
 
-  const [currentToken, setCurrentToken] = React.useState({})
+  const [currentTokenData, setCurrentTokenData] = React.useState({})
 
   React.useEffect(() => {
     props.setIsLoading(true)
@@ -69,16 +108,12 @@ export default function DetailedPage(props) {
       .then(data => {
         setData(data);
         props.setIsLoading(false);
-        console.log(data);
+        setCurrentOverviewData(data[overviewLabelMappings[currentOverviewLabel]])
       })
       .catch(error => {
         props.setIsLoading(false);
       });
   }, []);
-
-  const viewTokenInfo = () => {
-    
-  }
 
   return (
     <Container className="bg-white mt-4"
@@ -91,23 +126,33 @@ export default function DetailedPage(props) {
       }}
     >
       <Stack width="100%" padding={2} direction="row" spacing={2} alignItems={"center"}>
-        <IconButton onClick={goback}>
+      <IconButton onClick={goback}>
           <ChevronLeftIcon></ChevronLeftIcon>
         </IconButton>
+        <Typography
+            gutterBottom
+            component="div"
+            variant="h4"
+            align="left"
+            style={{
+              color: "grey"
+            }}
+          >Overview</Typography>
+      </Stack>
+      <Stack width="100%" padding={2} direction="row" spacing={2} alignItems={"center"}>
         <Typography
           gutterBottom
           component="div"
           variant="h5"
-          fontWeight="bold"
           style={{
             color: "grey"
           }}
         >Wallet</Typography>
         <Typography
           gutterBottom
-          component="div"
+          component="span"
           variant="body1"
-          fontWeight="bold"
+          fontStyle={"italic"}
           style={{
             color: "grey",
             fontSize: "16px",
@@ -116,9 +161,23 @@ export default function DetailedPage(props) {
         <IconButton onClick={() => {navigator.clipboard.writeText(id);}}>
           <ContentCopyIcon></ContentCopyIcon>
         </IconButton>
-
       </Stack>
-      <Stack
+      <Stack direction="row" justifyContent={"flex-end"}>
+        <ButtonGroup variant="outlined" aria-label="overviewSwitch">
+          {
+            Object.keys(overviewLabelMappings).map((item, index) => <Button sx={{
+              textTransform:"none"
+              }} variant={currentOverviewLabel == item ? "contained": "outlined"}
+              onClick={() => {
+                console.log(currentOverviewData)
+                setCurrentOverviewLabel(item);
+                setCurrentOverviewData(data[overviewLabelMappings[item]])
+              }}
+            >{item}</Button>)
+          }
+        </ButtonGroup>
+      </Stack>
+      {currentOverviewData !== undefined && <Stack
         direction="column"
         spacing={1}
         sx={{
@@ -127,119 +186,59 @@ export default function DetailedPage(props) {
           width: "100%",
         }}
       >
-        
-        {data?.tokensTradedData && 
-        <Stack direction="row" sx={{
-          height:"100%",
-        }} padding={1}>
-          <Stack spacing={1} padding={1}
-            sx={{
-              height:"100%",
-              overflowY:"auto",
-              overflowX:"hidden"
-            }}
-          >
-            {data.tokensTradedData.map((tokenTradeData, index) => (
-              <Tooltip placement="right" title={tokenTradeData.symbol}>
-                <div className={currentToken?.symbol === tokenTradeData.symbol && 
-                    "tokenActive"}>
-                  <Avatar
-                    alt={tokenTradeData.symbol}
-                    src={tokenTradeData.logo}
-                    style={{ width: '50px', height: '50px', cursor: 'pointer' }}
-                    onClick={() => {
-                      console.log(tokenTradeData)
-                      setCurrentToken(tokenTradeData)
-                    }}
-                  />
-                </div>
-              </Tooltip>
-            ))}
+        <Stack direction="row" width="max-content" padding={2} spacing={3}
+          sx={{
+            backgroundColor:"#80808026",
+            paddingX:"30px"
+          }}
+        >
+          <Stack direction="column" className="overviewInfo">
+            <Typography variant="span">{currentOverviewLabel} PnL</Typography>
+            <Typography variant="span" color={getTradeAmountColor(formatCurrency(currentOverviewData.pnl))}>{formatCurrency(currentOverviewData.pnl)}</Typography>
           </Stack>
-          {
-            currentToken?.logo 
-            ? 
-              <Stack direction="column" spacing={0.5} padding={2} sx={{
-                height:"100%",
-                overflowY:"auto",
-                width: "100%"
-              }}>
-                <Stack direction="row" alignItems="center" spacing={3}>
-                  <Typography color={"#1976d2eb"} fontWeight={"bold"} >Address</Typography>
-                  <Stack direction="row" alignItems="center" spacing={1} paddingTop={1}>
-                    <Typography
-                      component="span"
-                      variant="body1"
-                      fontStyle="italic"
-                      style={{
-                        color: "grey",
-                        fontSize: "16px",
-                      }}
-                    >{currentToken.address}</Typography>
-                    <IconButton onClick={() => {navigator.clipboard.writeText(currentToken.address);}}>
-                      <ContentCopyIcon></ContentCopyIcon>
-                    </IconButton>
-                  </Stack>
-                </Stack>
-                <Box
-                  sx={{
-                    display:"flex",
-                    flexWrap:"wrap",
-                    columnGap: "15px",
-                    rowGap:"5px"
+          <Stack direction="column" className="overviewInfo">
+            <Typography variant="span">{currentOverviewLabel} volume</Typography>
+            <Typography variant="span" color={getTradeAmountColor(formatCurrency(currentOverviewData.volume))}>{formatCurrency(currentOverviewData.volume)}</Typography>
+          </Stack>
+          <Stack direction="column" className="overviewInfo">
+            <Typography variant="span">{currentOverviewLabel} trades</Typography>
+            <Typography variant="span" fontWeight={"bold"} color="#555353">{formatNumberWithCommas(currentOverviewData.tradeCount)}</Typography>
+          </Stack>
+        </Stack>
+        <Stack direction="row" width="100%" overflow="hidden">
+          <Stack direction="column" sx={{
+            height:"100%",
+            width:"50%",
+            overflowY:"auto"
+          }}>
+            <TokenChangeTable 
+              rows={currentOverviewData.tokenChange}
+              tokens={data.tokensDexData || {}}
+              setCurrentTokenData={setCurrentTokenData}
+              currentTokenData={currentTokenData}
+            ></TokenChangeTable>
+          </Stack>
+          <Stack direction="column" sx={{
+            height:"100%",
+            width:"50%",
+            overflowY:"auto"
+          }}>
+            {currentTokenData && 
+              <Stack direction="column">
+                <Typography
+                  gutterBottom
+                  component="div"
+                  variant="h4"
+                  align="left"
+                  style={{
+                    color: "grey"
                   }}
-                >
-                  {attributes.map(attribute => (
-                    <Stack direction="row" spacing={1}
-                      sx={{
-                        padding: "3px 8px",
-                        borderRadius: "5px",
-                        backgroundColor: "#009aff1c",
-                        // border:"1px solid #2135470d"
-                      }}
-                    >
-                      <Typography color={"#1976d2eb"}>{attribute}</Typography>
-                      <Typography
-                        component="span"
-                        variant="body1"
-                        style={{
-                          fontSize: "15px"
-                        }}
-                      >{attribute === "symbol" ? currentToken[attribute] : formatValue(currentToken[attribute])}</Typography>
-                    </Stack>
-                  ))}
-                </Box>
-                <Stack paddingTop={2} spacing={1}>
-                  <Stack direction="row" spacing={1}>
-                    <Typography 
-                      align="left" 
-                      variant="h5"
-                      fontWeight={"bold"}
-                    >{currentToken.transactionLogs.length}</Typography>
-                    <Typography align="left" variant="h6">{currentToken.transactionLogs.length === 1 ? "transaction in the last 7 days" : "transactions in the last 7 days"}</Typography>
-                  </Stack>
-                  <TransactionHistoryTable pair={currentToken.symbol} transactionLogs={currentToken.transactionLogs}></TransactionHistoryTable>
-                </Stack>
-              </Stack> 
-            : 
-              <Box
-                sx={{
-                  display:"flex",
-                  flexDirection:"column",
-                  width:"100%",
-                  alignItems:"center",
-                  justifyContent:"center"
-                }}
-              >
-                {
-                  data.tokensTradedList.length > 0 ?
-                  <Typography align="center" variant="h6">Click on a token to view details</Typography>:
-                  <Typography align="center" variant="h6">No trade data is available for this wallet currently ...</Typography>
-                }
-              </Box>
-          }
-        </Stack>}
-      </Stack>
+                >{currentTokenData.name}</Typography>
+              </Stack>
+            }
+          </Stack>
+        </Stack>
+      </Stack>}
     </Container>
   );
 }

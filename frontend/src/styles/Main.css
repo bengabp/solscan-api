@@ -40,3 +40,48 @@ nav {
   margin: 0;
   padding: 0;
 }
+
+
+.overviewInfo{
+  padding:10px;
+  align-items:flex-start;
+}
+
+.overviewInfo span:last-child{
+  font-weight:bold;
+}
+
+.tradeAmountNegative{
+  color: rgb(249, 77, 92);
+  font-size: 18px;
+}
+
+.tradeAmountPositive{
+  color: rgb(33, 184, 40);
+  font-size: 18px;
+}
+
+
+.overviewInfo span:first-child{
+  color:#555353;
+  font-size:14px;
+}
+
+.textButton {
+  padding: 0;
+  min-width: 0;
+  text-transform: none;
+  
+  cursor:pointer;
+  border-radius: 0;
+  color: #1976d2;
+}
+
+.textButton:hover {
+  text-decoration:underline;
+}
+
+.tokenTableRow:hover{
+  background-color:rgba(128, 128, 128, 0.308);
+  cursor:pointer;
+}
