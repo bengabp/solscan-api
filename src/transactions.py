@@ -5,22 +5,30 @@ import httpx
 from curl_cffi import requests
 from requests.auth import HTTPProxyAuth
 from datetime import datetime, timedelta
-from src.models import TokenBase, TokenDexscreenerData
+from src.models import TokenDexscreenerData, Wallet
 from src.config import init_db, DEXSCREENER_API_URI, dramatiq_logger
 import logging
 import requests as generic_requests
 from src.exceptions import NoPopupDataFound
 import platform
 from pprint import pprint
-from src.utils import get_random_ua
+from src.utils import get_random_ua, calculate_duration
 
 
 class TransactionManager:
-    def __init__(self, account_hash):
+    def __init__(self, account_hash, wallet: Optional[Wallet] = None, debug=False):
         self.account_hash = account_hash
         self.platform = platform.system()
         self.trader_overview_url = 'https://multichain-api.birdeye.so/solana/trader_profile/trader_overview'
-        
+        self.wallet = wallet
+        self.debug = debug
+    
+    def update_wallet(self):
+        if not self.debug:
+            duration = calculate_duration(self.wallet.started_at)
+            self.wallet.duration = round(duration, 2)
+            self.wallet.save_changes()
+            
     def parse_avro_bytes(self, url, content: bytes) -> Dict:
         files=[
             ('file',('output', content, 'application/octet-stream'))
@@ -146,7 +154,7 @@ class TransactionManager:
         
     def dexscreener_send_until_ok(self, url, parser_url, headers, params, cookies):
         while True:
-            headers['user-agent'] = get_random_ua()
+            self.update_wallet()
             try:
                 response = requests.get(url, headers=headers, params=params, cookies=cookies)
                 if response.status_code in [200]:
@@ -165,7 +173,7 @@ class TransactionManager:
         timeout = 60 * 10
         
         while True:
-            headers['user-agent'] = get_random_ua()
+            self.update_wallet()
             try:
                 response = requests.get(url, params=params, headers=headers, timeout=timeout)
                 if response.status_code == 200:
@@ -242,7 +250,7 @@ if __name__ == "__main__":
             
     dramatiq_logger = Clogger()
     account_hash = "71WDyyCsZwyEYDV91Qrb212rdg6woCHYQhFnmZUBxiJ6"
-    manager = TransactionManager(account_hash)
+    manager = TransactionManager(account_hash, None, debug=True)
     
     start_time = time.time()
     tokens_all_time, wallet_summary = manager.get_wallet_summary_birdeye()

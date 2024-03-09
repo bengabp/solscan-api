@@ -9,7 +9,7 @@ from beanie import PydanticObjectId
 from pymongo.errors import DuplicateKeyError
 from src.tasks import new_task as add_new_task
 from fastapi.middleware.cors import CORSMiddleware
-
+from dramatiq_abort import abort as abort_task
 
 api = FastAPI()
 api.add_middleware(
@@ -51,9 +51,10 @@ def track_new_wallet(request: Request,  response: Response, create_request: Trac
         )
         wallet.create()
 
-    
     new_task.create()
     r = add_new_task.send(str(new_task.id))
+    new_task.task_id = r.message_id
+    new_task.save()
     
     response.status_code = status.HTTP_201_CREATED
     return wallet
@@ -74,3 +75,16 @@ def get_all_wallets(request: Request, response: Response):
     
     return wallets
 
+
+@api.delete("/wallets/{wallet_id}")
+def delete_wallet(request: Request, response: Response, wallet_id: str = Path()):
+    wallet = Wallet.find(Wallet.wallet_id == wallet_id).first_or_none()
+    if wallet:
+        wallet_tasks = Task.find(Task.wallet_id == wallet.wallet_id).to_list()
+        for task in wallet_tasks:
+            abort_task(task.task_id)
+            task.delete()   
+        wallet.delete()
+    
+    response.status_code =  status.HTTP_200_OK
+    return

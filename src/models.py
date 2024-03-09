@@ -12,13 +12,6 @@ OptionalString = Optional[str]
 OptionalInt = Optional[int]
 OptionalFloat = Optional[float]
 
-class TokenBase(BaseModel):
-    model_config = simple_pydantic_model_config
-    
-    symbol: str = Field(description = "Token symbol")
-    logo: OptionalString = Field(description="Token logo")
-    address: str = Field(description=  "Token address")
-
 class TokenDexscreenerData(BaseModel):
     model_config = simple_pydantic_model_config
 
@@ -43,7 +36,6 @@ class TokenDexscreenerData(BaseModel):
         "buys",
         "sells",
         "balance_percentage",
-        "first_swap",
         pre=True,
         check_fields=False
     )
@@ -53,23 +45,30 @@ class TokenDexscreenerData(BaseModel):
                 return None
         return v
     
-class TokenTradeData(TokenBase):
+class Token(BaseModel):
     model_config = simple_pydantic_model_config
+    
+    mint: str
+    ui_amount: float
+    price: float
+    name: str
+    symbol: str
+    icon: OptionalString
+    value: float
+    
+class TokenWithDexData(Token):
+    dex_data: Optional[TokenDexscreenerData] = Field(default=None)
+    
+class TimeWalletSummary(BaseModel):
+    model_config = simple_pydantic_model_config
+    pnl: float = Field(default=0)
+    token_change: List[Token]
+    trade_count: int
+    volume: float
+    
+    
+OptionalTimeWalletSummary = Optional[TimeWalletSummary]
 
-    buys:OptionalInt = Field(description="Total number of buy transactions")
-    sells: OptionalInt = Field(description="Total number of sell transactions")
-    volume_usd_sell: OptionalFloat = Field(description="Sell volume in usd")
-    volume_usd_buy: OptionalFloat = Field(description="Buy volume in usd")
-    amount_buy: OptionalString = Field(description= "Number of buy transactions")
-    amount_sell: OptionalString = Field(description= "Number of sell transactions")
-    balance_amount: OptionalString = Field(description="Balance amount")
-    balance_percentage: OptionalFloat = Field(description="Balance percentage")
-    first_swap: OptionalInt = Field(description="First swap -> UTC TIMESTAMP")
-
-    transaction_logs: List = Field(description="Historical transaction logs", default=[])
-    
-    
-    
 class Wallet(Document):
     class Settings:
         name = "wallets"
@@ -87,10 +86,20 @@ class Wallet(Document):
         alias = "_id",
     )
     
+    trade_yesterday: OptionalTimeWalletSummary = Field(default=None)
+    trade_today: OptionalTimeWalletSummary = Field(default=None)
+    trade_7D:  OptionalTimeWalletSummary = Field(default=None)
+    trade_30D: OptionalTimeWalletSummary = Field(default=None)
+    trade_60D: OptionalTimeWalletSummary = Field(default=None)
+    trade_90D: OptionalTimeWalletSummary = Field(default=None)
+    
+    started_at: int = Field(default_factory=current_utc_timestamp)
+    duration: float = Field(default=0)
     wallet_id: str = Field(description = "wallet id")
     status: Literal["running", "queued", "completed"] = Field(default = "queued")
-    tokens_traded_data: List[TokenTradeData] = Field(default=[])
-    tokens_traded_list: List[TokenBase] = Field(default=[])
+    tokens_dex_data: Dict = Field(default={})
+    status_percent: float = Field(default=0)
+    
     
 class Task(Document):
     class Settings:
@@ -107,27 +116,8 @@ class Task(Document):
     
     is_update_task: bool = Field(default=False)
     queued_at: int = Field(default_factory= current_utc_timestamp)
-    status: Literal["running", "queued", "completed"] = Field(default = "queued")
+    status: Literal["running", "queued", "completed", "aborted"] = Field(default = "queued")
     wallet_id: str = Field()
+    task_id: OptionalString = Field(default=None)
     result: Dict = Field(default={})
-    
-class Transaction(Document):
-    class Settings:
-        name = "transactions"
-        use_state_management = True
-        
-        indexes = [
-            IndexModel("txHash", name="signature_unique_1", unique=True)
-        ]
-    
-    model_config = simple_pydantic_model_config
-    
-    id: PydanticObjectId = Field(
-        description = "Document Id",
-        default_factory = lambda: PydanticObjectId(),
-        alias = "_id",
-    )
-    
-    tx_hash: str = Field(description = "Transaction signature", alias="txHash")
-    account: str = Field(description = "Account ID")
     
