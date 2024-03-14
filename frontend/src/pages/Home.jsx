@@ -20,17 +20,24 @@ function Home(props) {
 
   React.useEffect(() => {
     props.setIsLoading(true)
+    updateWalletData()
+    setInterval(() => {
+      updateWalletData()
+    }, 2000)
+  }, []);
+
+  const updateWalletData = () => {
     fetch(`${API_URI}/wallets`)
       .then(response => response.json())
       .then(data => {
         setData(data);
-        props.setIsLoading(false);
-        console.log(data);
       })
       .catch(error => {
+      })
+      .finally(() => {
         props.setIsLoading(false);
-      });
-  }, []);
+      })
+  }
 
   const create_task = (walletId) => {
     var myHeaders = new Headers();
@@ -95,12 +102,14 @@ function Home(props) {
           </Button>
         </Stack>
         <div className="grid padding-y-1">
-          {data.map((account, index) => (
-            <ClickableWalletCard
-              key={index}
-              account={account}
-            />
-          ))}
+          {data.map(
+            (account, index) => { 
+              return (<ClickableWalletCard
+                key={index}
+                account={account}
+              />);
+            })
+          }
         </div>
       </div>
     </Box>

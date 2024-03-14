@@ -19,59 +19,20 @@ import ButtonGroup from '@mui/material/ButtonGroup';
 import Button from "@mui/material/Button";
 import Paper from '@mui/material/Paper';
 import TokenChangeTable from '../components/TokenChangeTable';
+import LoopIcon from '@mui/icons-material/Loop';
+import LoadingButton from '@mui/lab/LoadingButton';
+import AccessTime from '@mui/icons-material/AccessTimeFilled';
+import { statusColors } from "../utils";
+import { getTradeAmountColor, formatCurrency } from "../utils";
 
-
-function formatValue(input) {
-  if (input === null) {
-    return '-';
-  }
-  if (typeof input === 'string') {
-    input = parseFloat(input);
-  }
-  if (isNaN(input)) {
-    return input.toString();
-  }
-  const suffixes = ['', 'K', 'M', 'B', 'T'];
-  let suffixIndex = 0;
-  while (input >= 1000 && suffixIndex < suffixes.length - 1) {
-    input /= 1000;
-    suffixIndex++;
-  }
-  input = Math.round(input * 10) / 10;
-  return input.toString() + suffixes[suffixIndex];
-}
-
-export function getTradeAmountColor(value) {
-  if (value === null || value === '-') {
-    return 'gray';
-  } else if (value.startsWith('-')) {
-    return 'red';
-  } else {
-    return 'green';
-  }
-}
-
-
-export function formatCurrency(number) {
-  // Convert the number to a string with 2 decimal places and add commas for thousands separators
-  const formattedNumber = Math.abs(number).toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  });
-
-  // Prepend a negative sign if the number is negative
-  const negativeSign = number < 0 ? '-' : '';
-
-  // Format the number as a currency string with the dollar sign
-  const currencyString = `${negativeSign}$${formattedNumber}`;
-
-  return currencyString;
-}
 
 
 
 function formatNumberWithCommas(number) {
   // Format the number with commas for thousands separators
+  if (number === undefined || number  === null){
+    return "-"
+  }
   const formattedNumber = Number(number).toLocaleString('en-US');
   return formattedNumber;
 }
@@ -80,8 +41,6 @@ export default function DetailedPage(props) {
   // Page ID
   const { id } = useParams();
   const navigation = useNavigate();
-  const [data, setData] = React.useState({});
-
   const overviewLabelMappings = {
     "Yesterday":"tradeYesterday",
     "Today":"tradeToday",
@@ -90,30 +49,59 @@ export default function DetailedPage(props) {
     "2M":"trade60d",
     "3M":"trade90d"
   }
-  
-  
+  const [data, setData] = React.useState({});
+  const [currentTokenData, setCurrentTokenData] = React.useState({})
   const [currentOverviewLabel, setCurrentOverviewLabel] = React.useState("Today")
   const [currentOverviewData, setCurrentOverviewData] = React.useState(data[overviewLabelMappings[currentOverviewLabel]]);
-
+  const [isSendingReanalyseRequest, setIsSendingReanalyseRequest] = React.useState(false);
+  
   function goback() {
     navigation(-1);
   }
 
-  const [currentTokenData, setCurrentTokenData] = React.useState({})
 
   React.useEffect(() => {
     props.setIsLoading(true)
+    updateWalletData()
+  }, []);
+
+  const updateWalletData = () => {
     fetch(`${API_URI}/wallets/${id}`)
       .then(response => response.json())
       .then(data => {
         setData(data);
-        props.setIsLoading(false);
         setCurrentOverviewData(data[overviewLabelMappings[currentOverviewLabel]])
       })
       .catch(error => {
+      })
+      .finally( ()=>{
         props.setIsLoading(false);
+      })
+  }
+  const reAnalyse = (walletId) => {
+    var myHeaders = new Headers();
+    myHeaders.append("Content-Type", "application/json");
+    var raw = JSON.stringify({
+      "walletId": walletId
+    });
+    var requestOptions = {
+      method: 'POST',
+      headers: myHeaders,
+      body: raw,
+      redirect: 'follow'
+    };
+
+    setIsSendingReanalyseRequest(true)
+    fetch(`${API_URI}/track`, requestOptions)
+      .then(response => response.json())
+      .then(result => {
+        setIsSendingReanalyseRequest(false)
+        updateWalletData()
+      })
+      .catch(error => {
+        setAddingNewWallet(false)
       });
-  }, []);
+  }
 
   return (
     <Container className="bg-white mt-4"
@@ -125,8 +113,8 @@ export default function DetailedPage(props) {
         overflowY:"hidden"
       }}
     >
-      <Stack width="100%" padding={2} direction="row" spacing={2} alignItems={"center"}>
-      <IconButton onClick={goback}>
+      {data.status !== undefined && <Stack width="100%" padding={2} direction="row" spacing={2} alignItems={"center"}>
+        <IconButton onClick={goback}>
           <ChevronLeftIcon></ChevronLeftIcon>
         </IconButton>
         <Typography
@@ -137,9 +125,33 @@ export default function DetailedPage(props) {
             style={{
               color: "grey"
             }}
-          >Overview</Typography>
-      </Stack>
-      <Stack width="100%" padding={2} direction="row" spacing={2} alignItems={"center"}>
+        >Overview</Typography>
+        <LoadingButton
+          size="small"
+          onClick={() => {reAnalyse(data.walletId)}}
+          loading={isSendingReanalyseRequest}
+          loadingPosition="end"
+          endIcon={<LoopIcon/>}
+          variant="contained"
+        >
+          <span>Re-analyse</span>
+        </LoadingButton>
+        <Typography
+          gutterBottom
+          component="div"
+          className={data.status === "running" ? "flashingBorder" : ""}
+          variant="body1"
+          style={{
+            color: statusColors[data.status][0],
+            fontSize: "12px",
+            backgroundColor: statusColors[data.status][1],
+            padding: "0px 3px",
+            borderRadius: "5px",
+            textAlign:"center"
+          }}
+        >{data.status.toUpperCase()}</Typography>
+      </Stack>}
+      {data.status !== undefined && <Stack width="100%" padding={2} direction="row" spacing={2} alignItems={"center"}>
         <Typography
           gutterBottom
           component="div"
@@ -161,13 +173,14 @@ export default function DetailedPage(props) {
         <IconButton onClick={() => {navigator.clipboard.writeText(id);}}>
           <ContentCopyIcon></ContentCopyIcon>
         </IconButton>
-      </Stack>
-      <Stack direction="row" justifyContent={"flex-end"}>
+      </Stack>}
+      {data.status !== undefined && <Stack direction="row" justifyContent={"flex-end"}>
         <ButtonGroup variant="outlined" aria-label="overviewSwitch">
           {
             Object.keys(overviewLabelMappings).map((item, index) => <Button sx={{
               textTransform:"none"
               }} variant={currentOverviewLabel == item ? "contained": "outlined"}
+              key={index}
               onClick={() => {
                 console.log(currentOverviewData)
                 setCurrentOverviewLabel(item);
@@ -176,7 +189,7 @@ export default function DetailedPage(props) {
             >{item}</Button>)
           }
         </ButtonGroup>
-      </Stack>
+      </Stack>}
       {currentOverviewData !== undefined && <Stack
         direction="column"
         spacing={1}
@@ -223,17 +236,44 @@ export default function DetailedPage(props) {
             width:"50%",
             overflowY:"auto"
           }}>
-            {currentTokenData && 
-              <Stack direction="column">
-                <Typography
-                  gutterBottom
-                  component="div"
-                  variant="h4"
-                  align="left"
-                  style={{
-                    color: "grey"
-                  }}
-                >{currentTokenData.name}</Typography>
+            {Object.keys(currentTokenData).length > 1 && 
+              <Stack direction="row" width="100%" className="tokenFieldsCnt" padding={1} flexWrap={"wrap"} spacing={1} rowGap={1}>
+                <Stack className="tokenFieldCnt">
+                  <Typography variant="body1">PNL</Typography>
+                  <Typography variant="body1">{currentTokenData.pnl}</Typography>
+                </Stack>
+                <Stack className="tokenFieldCnt">
+                  <Typography variant="body1">Bought Coin</Typography>
+                  <Typography variant="body1">{currentTokenData.amountBuy}</Typography>
+                </Stack>
+                <Stack className="tokenFieldCnt">
+                  <Typography variant="body1">Sold Coin</Typography>
+                  <Typography variant="body1">{currentTokenData.amountSell}</Typography>
+                </Stack>
+                <Stack className="tokenFieldCnt">
+                  <Typography variant="body1">Sold USD</Typography>
+                  <Typography variant="body1">${formatNumberWithCommas(currentTokenData.volumeUsdSell)}</Typography>
+                </Stack>
+                <Stack className="tokenFieldCnt">
+                  <Typography variant="body1">Bought USD</Typography>
+                  <Typography variant="body1">${formatNumberWithCommas(currentTokenData.volumeUsdBuy)}</Typography>
+                </Stack>
+                <Stack className="tokenFieldCnt">
+                  <Typography variant="body1">TNX Sell</Typography>
+                  <Typography variant="body1">{currentTokenData.sells}</Typography>
+                </Stack>
+                <Stack className="tokenFieldCnt">
+                  <Typography variant="body1">TNX Buy</Typography>
+                  <Typography variant="body1">{currentTokenData.buys}</Typography>
+                </Stack>
+                <Stack className="tokenFieldCnt">
+                  <Typography variant="body1">Unrealized PnL</Typography>
+                  <Typography variant="body1">{currentTokenData.balanceAmount}</Typography>
+                </Stack>
+                <Stack className="tokenFieldCnt">
+                  <Typography variant="body1">Balance Percentage</Typography>
+                  <Typography variant="body1">{currentTokenData.balancePercentage}</Typography>
+                </Stack>
               </Stack>
             }
           </Stack>

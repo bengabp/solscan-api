@@ -5,7 +5,7 @@ import httpx
 from curl_cffi import requests
 from requests.auth import HTTPProxyAuth
 from datetime import datetime, timedelta
-from src.models import TokenDexscreenerData, Wallet
+from src.models import TokenDexscreenerData, Wallet, Token
 from src.config import init_db, DEXSCREENER_API_URI, dramatiq_logger
 import logging
 import requests as generic_requests
@@ -13,6 +13,7 @@ from src.exceptions import NoPopupDataFound
 import platform
 from pprint import pprint
 from src.utils import get_random_ua, calculate_duration
+from pydantic import ValidationError
 
 
 class TransactionManager:
@@ -147,7 +148,7 @@ class TransactionManager:
                     "pairAddress": raydium_pair_address
                 })
                 token_dexscreener_data = TokenDexscreenerData.model_validate(_details)
-                token_dexscreener_data.pnl = "$ " + str(token_dexscreener_data.volume_usd_buy - token_dexscreener_data.volume_usd_sell)
+                token_dexscreener_data.pnl = str(token_dexscreener_data.volume_usd_buy - token_dexscreener_data.volume_usd_sell)
             except KeyError:
                 return None
         return token_dexscreener_data
@@ -228,9 +229,14 @@ class TransactionManager:
                 _wallet_summary[key] = value
             wallet_summary[_time] = _wallet_summary
             for token in _wallet_summary.get("tokenChange", []):
-                addr_symbol = f"{token['mint']}_____{token['symbol']}"
-                unique_token_list.add(addr_symbol)
-                token_datas[addr_symbol] = token
+                try:
+                    Token.model_validate(token)
+                    addr_symbol = f"{token['mint']}_____{token['symbol']}"
+                    unique_token_list.add(addr_symbol)
+                    token_datas[addr_symbol] = token
+                except ValidationError:
+                    continue
+                
         
         _tokens_all_time = [token_datas[addr_symb] for addr_symb in unique_token_list]
         dramatiq_logger.info(f"{len(token_datas)} tokens found for all time trades [{self.account_hash}] ... Getting dexscreener token data ...")

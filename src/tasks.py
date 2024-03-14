@@ -21,35 +21,51 @@ redis_broker = RedisBroker(url=f"redis://{REDIS_HOSTNAME}:{REDIS_PORT}/{REDIS_BR
 redis_broker.add_middleware(abortable)
 dramatiq.set_broker(redis_broker)
 
+
 init_db([Task, Wallet])
 
-@dramatiq.actor(max_retries=1, time_limit=5000000)
+def startup():
+    print("Startup ...analyzing tasks ...")
+    tasks = Task.find(Task.status == "running").to_list()
+    for task in tasks:
+        n_task = Task(
+            wallet_id=task.wallet_id,
+            is_update_task=task.is_update_task
+        )
+        n_task.create()
+        res = new_task.send(str(n_task.id))
+        n_task.task_id = res.message_id
+        n_task.save_changes()
+        task.delete()
+
+ 
+@dramatiq.actor(max_retries=0, time_limit=5000000)
 def new_task(task_id: str):
+    task_id = PydanticObjectId(task_id)
+    task = Task.find(Task.id == task_id).first_or_none()
+    if not task:
+        return
+    
+    res = Task.find(Task.wallet_id == task.wallet_id).sort(-Task.id).to_list()
+    for i,t in enumerate(res):
+        if i > 0:
+            t.status = "aborted"
+            t.save_changes()
+            if task_id == t.id:
+                dramatiq_logger.warning(f"Aborting task for [{task.wallet_id}]")
+                return
+        
+    task.status = "running"
+    task.save_changes()
+    
+    wallet = Wallet.find(Wallet.wallet_id == task.wallet_id).first_or_none()
+    wallet.status = "running"
+    wallet.started_at = current_utc_timestamp()
+    wallet.status_percent = 0
+    wallet.duration = 0
+    wallet.save_changes()
+    
     try:
-        task_id = PydanticObjectId(task_id)
-        task = Task.find(Task.id == task_id).first_or_none()
-        if not task:
-            return
-        
-        res = Task.find(Task.wallet_id == task.wallet_id).sort(-Task.id).to_list()
-        for i,t in enumerate(res):
-            if i > 0:
-                t.status = "aborted"
-                t.save_changes()
-                if task_id == t.id:
-                    dramatiq_logger.warning(f"Aborting task for [{task.wallet_id}]")
-                    return
-            
-        task.status = "running"
-        task.save_changes()
-        
-        wallet = Wallet.find(Wallet.wallet_id == task.wallet_id).first_or_none()
-        wallet.status = "running"
-        wallet.started_at = current_utc_timestamp()
-        wallet.status_percent = 0
-        wallet.duration = 0
-        wallet.save_changes()
-        
         dramatiq_logger.info(f"Running task => {task.id} for [{wallet.wallet_id}] wallet")
         t_manager = TransactionManager(wallet.wallet_id, wallet)
         
@@ -74,6 +90,7 @@ def new_task(task_id: str):
             wallet.trade_60D = TimeWalletSummary.model_validate(_60d)
         if _90d:
             wallet.trade_90D = TimeWalletSummary.model_validate(_90d)
+            wallet.pnl_90days = _90d.get("pnl")
         
         wallet.status_percent = 0.1
         wallet.save()
@@ -102,4 +119,11 @@ def new_task(task_id: str):
         dramatiq_logger.info(f"All traded data saved successfully ...")
     except Abort:
         pass
+    except Exception as e:
+        dramatiq_logger.error(f"Wallet task [{task.wallet_id}] failed with error => {e}")
+        task.status = "failed"
+        wallet.status ="failed"
+        wallet.save_changes()
+        task.save_changes()
 
+startup()

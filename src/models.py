@@ -49,12 +49,12 @@ class Token(BaseModel):
     model_config = simple_pydantic_model_config
     
     mint: str
-    ui_amount: float
-    price: float
+    ui_amount: OptionalFloat
+    price: OptionalFloat
     name: str
     symbol: str
     icon: OptionalString
-    value: float
+    value: OptionalFloat
     
 class TokenWithDexData(Token):
     dex_data: Optional[TokenDexscreenerData] = Field(default=None)
@@ -69,6 +69,23 @@ class TimeWalletSummary(BaseModel):
     
 OptionalTimeWalletSummary = Optional[TimeWalletSummary]
 
+class ShortWalletData(BaseModel):
+    model_config = simple_pydantic_model_config
+    
+    id: PydanticObjectId = Field(
+        description = "Document Id",
+        default_factory = lambda: PydanticObjectId(),
+        alias = "_id",
+    )
+    
+    started_at: int
+    duration: float
+    wallet_id: str
+    status: Literal["running", "queued", "completed", "failed", "aborted"]
+    status_percent: float
+    pnl_90days: OptionalString = Field(default=None)
+    
+    
 class Wallet(Document):
     class Settings:
         name = "wallets"
@@ -96,9 +113,10 @@ class Wallet(Document):
     started_at: int = Field(default_factory=current_utc_timestamp)
     duration: float = Field(default=0)
     wallet_id: str = Field(description = "wallet id")
-    status: Literal["running", "queued", "completed"] = Field(default = "queued")
+    status: Literal["running", "queued", "completed", "failed", "aborted"] = Field(default = "queued")
     tokens_dex_data: Dict = Field(default={})
     status_percent: float = Field(default=0)
+    pnl_90days: OptionalString = Field(default=None)
     
     
 class Task(Document):
@@ -116,8 +134,8 @@ class Task(Document):
     
     is_update_task: bool = Field(default=False)
     queued_at: int = Field(default_factory= current_utc_timestamp)
-    status: Literal["running", "queued", "completed", "aborted"] = Field(default = "queued")
+    status: Literal["running", "queued", "completed", "aborted", "failed"] = Field(default = "queued")
     wallet_id: str = Field()
     task_id: OptionalString = Field(default=None)
     result: Dict = Field(default={})
-    
+

@@ -85,3 +85,23 @@ nav {
   background-color:rgba(128, 128, 128, 0.308);
   cursor:pointer;
 }
+
+
+.tokenFieldCnt{
+  background-color:#80808024;
+  display:flex;
+  gap:5px;
+  flex-direction:column;
+  width:200px;
+  height:80px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  align-items:flex-start;
+}
+
+/* .tokenFieldsCnt{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 10px;
+} */

@@ -13,7 +13,7 @@ import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import Avatar from '@mui/material/Avatar';
-import {getTradeAmountColor, formatCurrency} from '../pages/Details';
+import {getTradeAmountColor, formatCurrency} from '../utils';
 
 
 export default function TokenChangeTable(props) {
@@ -46,9 +46,9 @@ export default function TokenChangeTable(props) {
                                 <a className="textButton" target='_blank' href={`https://birdeye.so/token/${row.mint}`}>{row.symbol}</a>
                             </Stack>
                         </TableCell>
-                        <TableCell component="div" align="right" sx={{color:getTradeAmountColor(row.uiAmount.toString())}}>{(row.uiAmount)}</TableCell>
+                        <TableCell component="div" align="right" sx={{color:getTradeAmountColor(row.uiAmount)}}>{(row.uiAmount)}</TableCell>
                         <TableCell component="div" align="right">${row.price}</TableCell>
-                        <TableCell component="div" align="right" sx={{color:getTradeAmountColor(row.value.toString())}}>{formatCurrency(row.value)}</TableCell>
+                        <TableCell component="div" align="right" sx={{color:getTradeAmountColor(row.value)}}>{formatCurrency(row.value)}</TableCell>
                     </TableRow>
                 ))}
             </TableBody>

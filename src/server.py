@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 from typing import Optional
 from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
-from src.models import Task, Wallet
+from src.models import Task, Wallet, ShortWalletData
 from src.config import init_db, simple_pydantic_model_config, current_utc_timestamp
 from beanie import PydanticObjectId
 from pymongo.errors import DuplicateKeyError
@@ -42,6 +42,9 @@ def track_new_wallet(request: Request,  response: Response, create_request: Trac
     if wallet:
         new_task.is_update_task = True
         wallet.status = new_task.status
+        wallet.duration = 0
+        wallet.status_percent = 0
+        wallet.started_at = 0
         wallet.save_changes()
     else:
         new_task.is_update_task = False
@@ -57,7 +60,7 @@ def track_new_wallet(request: Request,  response: Response, create_request: Trac
     new_task.save()
     
     response.status_code = status.HTTP_201_CREATED
-    return wallet
+    return ShortWalletData.model_validate(wallet.model_dump(by_alias=True))
 
 @api.get("/wallets/{wallet_id}")
 def get_wallet(request: Request, response: Response, wallet_id: str = Path()):
@@ -71,7 +74,7 @@ def get_wallet(request: Request, response: Response, wallet_id: str = Path()):
 
 @api.get("/wallets")
 def get_all_wallets(request: Request, response: Response):
-    wallets = Wallet.find().to_list()
+    wallets = Wallet.find(projection_model=ShortWalletData).to_list()
     
     return wallets
 
