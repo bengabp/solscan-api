@@ -66,6 +66,12 @@ class TimeWalletSummary(BaseModel):
     trade_count: int
     volume: float
     
+    @validator('volume', 'trade_count', pre=True, check_fields=False)
+    def type_conv(cls,y):
+        if y == None:
+            return 0
+        return y
+    
     
 OptionalTimeWalletSummary = Optional[TimeWalletSummary]
 
