@@ -78,11 +78,11 @@ class ShortWalletData(BaseModel):
         alias = "_id",
     )
     
-    started_at: int
-    duration: float
-    wallet_id: str
-    status: Literal["running", "queued", "completed", "failed", "aborted"]
-    status_percent: float
+    started_at: int = Field(default_factory=current_utc_timestamp)
+    duration: float = Field(default=0)
+    wallet_id: str 
+    status: Literal["running", "queued", "completed", "failed", "aborted"] = Field(default="queued")
+    status_percent: float = Field(default=0)
     pnl_90days: OptionalString = Field(default=None)
     
     

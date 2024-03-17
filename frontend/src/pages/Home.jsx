@@ -8,8 +8,8 @@ import AddIcon from "@mui/icons-material/Add";
 import CustomSearchBar from "../components/SearchBar";
 import ClickableWalletCard from "../components/walletCard";
 
-// export const API_URI = "https://fgdkdex.infignity.uk";
-export const API_URI = "http://localhost:8000";
+export const API_URI = "https://fgdkdex.infignity.uk";
+// export const API_URI = "http://localhost:8000";
 
 function Home(props) {
   // Generate wallet data for 100 users

@@ -59,6 +59,11 @@ def new_task(task_id: str):
     task.save_changes()
     
     wallet = Wallet.find(Wallet.wallet_id == task.wallet_id).first_or_none()
+    if not wallet:
+        task.status = "completed"
+        task.save_changes()
+        return 
+    
     wallet.status = "running"
     wallet.started_at = current_utc_timestamp()
     wallet.status_percent = 0
@@ -90,7 +95,7 @@ def new_task(task_id: str):
             wallet.trade_60D = TimeWalletSummary.model_validate(_60d)
         if _90d:
             wallet.trade_90D = TimeWalletSummary.model_validate(_90d)
-            wallet.pnl_90days = _90d.get("pnl")
+            wallet.pnl_90days = str(_90d.get("pnl"))
         
         wallet.status_percent = 0.1
         wallet.save()
