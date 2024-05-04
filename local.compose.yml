@@ -1,0 +1,54 @@
+version: '3'
+
+services:
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #   ports:
+  #     - "8098:3000"
+  #   env_file: &app_env
+  #     - .env
+  #   depends_on:
+  #     - api
+  #   restart: always
+
+  api:
+    build: &backend_build
+      context: .
+    ports:
+      - "8070:8080"
+    volumes: &backend_volumes
+      - ./logs:/app/logs
+    restart: always
+    depends_on:
+      - worker
+    env_file: &app_env
+      - .env
+    environment: &app_env_direct
+      - BROKER_URI=redis://localhost:6379
+      - DEXSCREENER_API_URI=http://localhost:3000
+
+  dexscreener:
+    build:
+      context: ./dexscreener
+    env_file: *app_env
+    environment: *app_env_direct
+    ports:
+      - "3000:3000"
+
+  worker:
+    build: *backend_build
+    volumes: *backend_volumes
+    restart: always
+    env_file: *app_env
+    command: [ "dramatiq" ,"src.tasks" ]
+    environment: *app_env_direct
+    depends_on:
+      - redisdb
+      - dexscreener
+
+  redisdb:
+    image: redis:latest
+    restart: always
+    ports:
+      - "6379:6379"
