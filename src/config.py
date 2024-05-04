@@ -19,34 +19,18 @@ def create_dir(name):
     os.makedirs(fullpath, exist_ok=True)
     return fullpath
 
-try:
-    config = Config(".env")
-except:
-    config = Config()
+config = Config(".env")
 
 logs_dir = create_dir("logs")
 
-HEADERS = {
-    "authority": "planning.adur-worthing.gov.uk",
-    "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-    "accept-language": "en-US,en;q=0.9",
-    "cache-control": "max-age=0",
-    "sec-ch-ua": '"Google Chrome";v="119", "Chromium";v="119", "Not?A_Brand";v="24"',
-    "sec-ch-ua-mobile": "?0",
-    "sec-ch-ua-platform": '"Windows"',
-    "sec-fetch-dest": "document",
-    "sec-fetch-mode": "navigate",
-    "sec-fetch-site": "none",
-    "sec-fetch-user": "?1",
-    "upgrade-insecure-requests": "1",
-    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
-}
-
 MONGODB_DB_NAME = "SolanaScan"
-
 MONGODB_URI = config("MONGODB_URI")#,default= "mongodb://localhost:27017")
 BROKER_URI = config("BROKER_URI")#, default="redis://127.0.0.1:6379/0")
 DEXSCREENER_API_URI = config("DEXSCREENER_API_URI")#, default="http://localhost:3000")
+SENTRY_ENABLED = config("SENTRY_ENABLED", cast=bool, default=False)
+DEBUG = config("DEBUG", cast=bool, default=False)
+ENVIRONMENT = "development" if DEBUG else "production"
+SENTRY_DSN = config("SENTRY_DSN")
 
 dramatiq_logger = logging.getLogger("dramatiq")
 file_handler = logging.FileHandler(
